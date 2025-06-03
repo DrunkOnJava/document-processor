@@ -123,17 +123,24 @@
                 display: none !important;
             }
         }
-        .toolbar {
+        /* Toolbar container to keep both toolbars together */
+        .toolbar-container {
             position: sticky;
             top: 0;
+            z-index: 100;
+            background: #e0e0e0;
+            padding-bottom: 0;
+            max-width: 8.5in;
+            margin: 0 auto 20px;
+        }
+        
+        .toolbar {
             background: #333;
             color: white;
             padding: 10px 20px;
             width: 100%;
-            max-width: 8.5in;
             display: flex;
             gap: 10px;
-            z-index: 100;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
             border-radius: 4px 4px 0 0;
             margin-bottom: 0;
@@ -325,15 +332,14 @@
             background-color: #f2f2f2;
         }
         .format-buttons {
-            margin: 10px 0;
             display: flex;
             gap: 5px;
             flex-wrap: wrap;
-            max-width: 8.5in;
             background: white;
             padding: 10px;
             border-radius: 0 0 4px 4px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin: 0;
         }
         .format-buttons button {
             padding: 5px 10px;
@@ -363,21 +369,21 @@
     </style>
 </head>
 <body>
-    <div class="page-wrapper">
-    <div class="toolbar">
-        <button onclick="saveDocument()">💾 Save</button>
-        <button onclick="loadDocument()">📁 Load</button>
-        <button onclick="exportAsHTML()">📤 Export HTML</button>
-        <button onclick="exportAsMarkdown()">📝 Export Markdown</button>
-        <button onclick="insertImage()">🖼️ Insert Image</button>
-        <button onclick="insertTable()">📊 Insert Table</button>
-        <button onclick="insertTOC()">📑 Insert TOC</button>
-        <button onclick="toggleEditMode()">✏️ Toggle Edit</button>
-        <button onclick="toggleMargins()">📏 Toggle Margins</button>
-        <button onclick="addNewPage()">📄 Add Page</button>
-    </div>
+    <div class="toolbar-container">
+        <div class="toolbar">
+            <button onclick="saveDocument()">💾 Save</button>
+            <button onclick="loadDocument()">📁 Load</button>
+            <button onclick="exportAsHTML()">📤 Export HTML</button>
+            <button onclick="exportAsMarkdown()">📝 Export Markdown</button>
+            <button onclick="insertImage()">🖼️ Insert Image</button>
+            <button onclick="insertTable()">📊 Insert Table</button>
+            <button onclick="insertTOC()">📑 Insert TOC</button>
+            <button onclick="toggleEditMode()">✏️ Toggle Edit</button>
+            <button onclick="toggleMargins()">📏 Toggle Margins</button>
+            <button onclick="addNewPage()">📄 Add Page</button>
+        </div>
 
-    <div class="format-buttons">
+        <div class="format-buttons">
         <button onclick="formatText('bold')"><b>Bold</b></button>
         <button onclick="formatText('italic')"><i>Italic</i></button>
         <button onclick="formatText('underline')"><u>Underline</u></button>
@@ -402,7 +408,10 @@
             <option value="2.5">2.5</option>
             <option value="3">Triple</option>
         </select>
+        </div>
     </div>
+    
+    <div class="page-wrapper">
 
     <div class="document-container" id="page-1">
         <div class="margin-guides"></div>
