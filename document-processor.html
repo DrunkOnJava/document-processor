@@ -155,7 +155,6 @@
             height: 9in;
             min-height: 9in;
             max-height: 9in;
-            line-height: 2; /* Default double-spaced */
             outline: none;
             overflow: hidden;
             font-size: 12pt;
@@ -167,6 +166,29 @@
             height: auto;
             display: block;
             margin: 20px 0;
+        }
+        
+        /* Line spacing classes for paragraph-level control */
+        .spacing-1 { line-height: 1 !important; }
+        .spacing-1-15 { line-height: 1.15 !important; }
+        .spacing-1-5 { line-height: 1.5 !important; }
+        .spacing-2 { line-height: 2 !important; }
+        .spacing-2-5 { line-height: 2.5 !important; }
+        .spacing-3 { line-height: 3 !important; }
+        
+        /* Default line height for block elements - inherit from parent or class */
+        .editable-content p,
+        .editable-content div,
+        .editable-content h1,
+        .editable-content h2,
+        .editable-content h3,
+        .editable-content h4,
+        .editable-content h5,
+        .editable-content h6,
+        .editable-content li,
+        .editable-content blockquote,
+        .editable-content pre {
+            line-height: inherit;
         }
         
         /* Text alignment classes */
@@ -438,92 +460,206 @@
         let pageCount = 1;
         let currentLineSpacing = 2; // Default double-spaced
         
+        // Line spacing configuration
+        const SPACING_CLASSES = {
+            '1': 'spacing-1',
+            '1.15': 'spacing-1-15',
+            '1.5': 'spacing-1-5',
+            '2': 'spacing-2',
+            '2.5': 'spacing-2-5',
+            '3': 'spacing-3'
+        };
+        
+        // Get all block elements that should have spacing
+        function getBlockElements(container) {
+            const selector = 'p, div:not(.image-container):not(.table-of-contents):not(.toc-content):not(.toc-entry), h1, h2, h3, h4, h5, h6, li, blockquote, pre';
+            return container.querySelectorAll(selector);
+        }
+        
+        // Get the containing paragraph element
+        function getContainingParagraph(node) {
+            const blockTags = ['P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'BLOCKQUOTE', 'PRE'];
+            
+            while (node && node !== document.body) {
+                if (node.nodeType === 1) {
+                    if (blockTags.includes(node.tagName)) {
+                        // Skip special divs
+                        if (node.tagName === 'DIV') {
+                            if (node.classList.contains('image-container') || 
+                                node.classList.contains('table-of-contents') ||
+                                node.classList.contains('toc-content') ||
+                                node.classList.contains('toc-entry')) {
+                                node = node.parentElement;
+                                continue;
+                            }
+                        }
+                        // Must be inside editable content
+                        if (node.closest('.editable-content')) {
+                            return node;
+                        }
+                    }
+                }
+                node = node.parentElement;
+            }
+            return null;
+        }
+        
+        // Get the paragraph(s) affected by current selection
+        function getParagraphsFromSelection() {
+            const selection = window.getSelection();
+            const paragraphs = new Set();
+            
+            if (selection.rangeCount === 0) return [];
+            
+            const range = selection.getRangeAt(0);
+            
+            // If collapsed (no selection), get current paragraph
+            if (range.collapsed) {
+                const para = getContainingParagraph(range.commonAncestorContainer);
+                if (para) paragraphs.add(para);
+            } else {
+                // Get all paragraphs in the selection range
+                const container = range.commonAncestorContainer;
+                const rootElement = container.nodeType === 1 ? container : container.parentElement;
+                
+                // Find the closest editable content
+                const editableContent = rootElement.closest('.editable-content') || rootElement.querySelector('.editable-content');
+                if (editableContent) {
+                    const blocks = getBlockElements(editableContent);
+                    
+                    blocks.forEach(block => {
+                        // Check if block is at least partially in selection
+                        if (selection.containsNode(block, true)) {
+                            paragraphs.add(block);
+                        }
+                    });
+                }
+            }
+            
+            return Array.from(paragraphs);
+        }
+        
+        // Apply spacing to a single paragraph
+        function applySpacingToParagraph(element, spacing) {
+            // Remove all spacing classes first
+            Object.values(SPACING_CLASSES).forEach(className => {
+                element.classList.remove(className);
+            });
+            
+            // Remove inline line-height style
+            element.style.lineHeight = '';
+            
+            // Apply new spacing
+            if (SPACING_CLASSES[spacing]) {
+                element.classList.add(SPACING_CLASSES[spacing]);
+                element.setAttribute('data-line-spacing', spacing);
+            } else {
+                // Custom spacing - use inline style
+                element.style.lineHeight = spacing;
+                element.setAttribute('data-line-spacing', spacing);
+            }
+        }
+        
+        // Get spacing from a paragraph element
+        function getSpacingFromParagraph(element) {
+            // First check data attribute
+            const dataSpacing = element.getAttribute('data-line-spacing');
+            if (dataSpacing) return parseFloat(dataSpacing);
+            
+            // Then check for spacing classes
+            for (const [value, className] of Object.entries(SPACING_CLASSES)) {
+                if (element.classList.contains(className)) {
+                    return parseFloat(value);
+                }
+            }
+            
+            // Check inline style
+            if (element.style.lineHeight && element.style.lineHeight !== 'normal') {
+                return parseFloat(element.style.lineHeight);
+            }
+            
+            // Default to document default
+            return currentLineSpacing;
+        }
+        
         // Update toolbar state to show current formatting
         function updateToolbarState() {
-            const selection = window.getSelection();
-            if (selection.rangeCount > 0) {
-                const range = selection.getRangeAt(0);
-                let element = range.commonAncestorContainer;
+            const paragraphs = getParagraphsFromSelection();
+            const spacingSelect = document.getElementById('lineSpacingSelect');
+            
+            if (!spacingSelect) return;
+            
+            // Reset all option labels first
+            Array.from(spacingSelect.options).forEach(option => {
+                const baseText = option.text.split(' (')[0];
+                option.text = baseText;
+            });
+            
+            if (paragraphs.length === 0) {
+                // No paragraphs selected, show document default
+                spacingSelect.value = currentLineSpacing.toString();
+                return;
+            }
+            
+            // Get all unique spacings in selection
+            const spacings = new Set();
+            paragraphs.forEach(para => {
+                const spacing = getSpacingFromParagraph(para);
+                spacings.add(spacing);
+            });
+            
+            if (spacings.size === 1) {
+                // All paragraphs have same spacing
+                const spacing = Array.from(spacings)[0];
                 
-                // Get parent element if we're in a text node
-                if (element.nodeType === 3) {
-                    element = element.parentElement;
-                }
+                // Find closest option
+                let closestOption = null;
+                let closestDiff = Infinity;
                 
-                // Find the line spacing of current element
-                let lineHeight = null;
-                let checkElement = element;
-                
-                while (checkElement && checkElement !== document.body) {
-                    const computedStyle = window.getComputedStyle(checkElement);
-                    const computedLineHeight = computedStyle.lineHeight;
-                    
-                    // Check if element has explicit line-height style
-                    if (checkElement.style.lineHeight) {
-                        lineHeight = parseFloat(checkElement.style.lineHeight);
-                        break;
+                Array.from(spacingSelect.options).forEach(option => {
+                    const optionValue = parseFloat(option.value);
+                    const diff = Math.abs(optionValue - spacing);
+                    if (diff < closestDiff) {
+                        closestDiff = diff;
+                        closestOption = option;
                     }
-                    
-                    // Check computed line-height (but only if it's not 'normal')
-                    if (computedLineHeight !== 'normal') {
-                        // Convert px values to multiplier
-                        const fontSize = parseFloat(computedStyle.fontSize);
-                        const lineHeightPx = parseFloat(computedLineHeight);
-                        if (!isNaN(lineHeightPx) && !isNaN(fontSize) && fontSize > 0) {
-                            lineHeight = lineHeightPx / fontSize;
-                            break;
-                        }
-                    }
-                    
-                    checkElement = checkElement.parentElement;
-                }
+                });
                 
-                // If no line height found, use the current default
-                if (lineHeight === null) {
-                    lineHeight = currentLineSpacing;
-                }
-                
-                // Update the line spacing dropdown to show current value
-                const spacingSelect = document.getElementById('lineSpacingSelect');
-                if (spacingSelect) {
-                    // Find closest matching option
-                    const options = Array.from(spacingSelect.options);
-                    let closestOption = options[0];
-                    let closestDiff = Math.abs(parseFloat(closestOption.value) - lineHeight);
-                    
-                    options.forEach(option => {
-                        const diff = Math.abs(parseFloat(option.value) - lineHeight);
-                        if (diff < closestDiff) {
-                            closestDiff = diff;
-                            closestOption = option;
-                        }
-                    });
-                    
-                    // First, reset all option texts to their original values
-                    options.forEach(option => {
-                        const baseText = option.text.split(' (')[0]; // Remove any existing parentheses
-                        option.text = baseText;
-                    });
-                    
-                    // Update the label to show actual value if different
-                    if (Math.abs(parseFloat(closestOption.value) - lineHeight) > 0.01) {
-                        // Show actual value in parentheses
-                        const originalText = closestOption.text.split(' (')[0]; // Remove any existing parentheses
-                        closestOption.text = `${originalText} (${lineHeight.toFixed(2)})`;
-                    }
-                    
+                if (closestOption) {
                     spacingSelect.value = closestOption.value;
+                    
+                    // Show actual value if different
+                    if (Math.abs(parseFloat(closestOption.value) - spacing) > 0.01) {
+                        const baseText = closestOption.text.split(' (')[0];
+                        closestOption.text = `${baseText} (${spacing.toFixed(2)})`;
+                    }
+                }
+            } else {
+                // Mixed spacing - show indicator
+                const currentOption = Array.from(spacingSelect.options).find(
+                    opt => opt.value === spacingSelect.value
+                );
+                if (currentOption) {
+                    const baseText = currentOption.text.split(' (')[0];
+                    currentOption.text = `${baseText} (Mixed)`;
                 }
             }
         }
         
+        // Debounced toolbar update for better performance
+        let toolbarUpdateTimeout;
+        function debouncedToolbarUpdate() {
+            clearTimeout(toolbarUpdateTimeout);
+            toolbarUpdateTimeout = setTimeout(updateToolbarState, 50);
+        }
+        
         // Update toolbar state on selection change
-        document.addEventListener('selectionchange', updateToolbarState);
+        document.addEventListener('selectionchange', debouncedToolbarUpdate);
         
         // Update toolbar state on click
         document.addEventListener('click', function(e) {
             if (e.target.closest('.editable-content')) {
-                setTimeout(updateToolbarState, 10);
+                debouncedToolbarUpdate();
             }
         });
         
@@ -533,7 +669,7 @@
                 // Update on arrow keys, page up/down, home/end
                 if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 
                      'PageUp', 'PageDown', 'Home', 'End'].includes(e.key)) {
-                    setTimeout(updateToolbarState, 10);
+                    debouncedToolbarUpdate();
                 }
             }
         });
@@ -566,13 +702,9 @@
                     break;
                 case 'ul':
                     document.execCommand('insertUnorderedList', false, null);
-                    // Apply 1.5 spacing to new unordered lists
-                    setTimeout(() => applyListSpacing(), 50);
                     break;
                 case 'ol':
                     document.execCommand('insertOrderedList', false, null);
-                    // Apply 1.5 spacing to new ordered lists
-                    setTimeout(() => applyListSpacing(), 50);
                     break;
                 case 'quote':
                     document.execCommand('formatBlock', false, '<blockquote>');
@@ -588,30 +720,6 @@
             
             // Update toolbar after formatting
             updateToolbarState();
-        }
-        
-        function applyListSpacing() {
-            const selection = window.getSelection();
-            if (selection.rangeCount > 0) {
-                const range = selection.getRangeAt(0);
-                let listElement = range.commonAncestorContainer;
-                
-                // Find the list element
-                while (listElement && listElement.nodeType !== 1) {
-                    listElement = listElement.parentElement;
-                }
-                
-                while (listElement && listElement.nodeName !== 'UL' && listElement.nodeName !== 'OL') {
-                    listElement = listElement.parentElement;
-                }
-                
-                if (listElement && (listElement.nodeName === 'UL' || listElement.nodeName === 'OL')) {
-                    // Only apply if the list doesn't already have a line-height set
-                    if (!listElement.style.lineHeight) {
-                        listElement.style.lineHeight = '1.5';
-                    }
-                }
-            }
         }
         
         function alignText(alignment) {
@@ -652,27 +760,63 @@
         }
         
         function setLineSpacing(spacing) {
-            currentLineSpacing = parseFloat(spacing);
+            const paragraphs = getParagraphsFromSelection();
             
-            // Apply to all editable content areas
-            document.querySelectorAll('.editable-content').forEach(content => {
-                content.style.lineHeight = currentLineSpacing;
-                
-                // Also apply to all child elements to ensure consistency
-                const allElements = content.querySelectorAll('*');
-                allElements.forEach(el => {
-                    if (!el.style.lineHeight || el.style.lineHeight === 'inherit') {
-                        el.style.lineHeight = 'inherit';
+            if (paragraphs.length === 0) {
+                // No valid paragraphs found, possibly in empty content
+                const activeElement = document.activeElement;
+                const content = activeElement && activeElement.closest('.editable-content');
+                if (content) {
+                    // Ensure content has at least one paragraph
+                    if (!content.querySelector('p, h1, h2, h3, h4, h5, h6, li, blockquote')) {
+                        const p = document.createElement('p');
+                        p.innerHTML = '<br>';
+                        content.appendChild(p);
+                        paragraphs.push(p);
+                        
+                        // Move cursor to new paragraph
+                        const range = document.createRange();
+                        const selection = window.getSelection();
+                        range.selectNodeContents(p);
+                        range.collapse(true);
+                        selection.removeAllRanges();
+                        selection.addRange(range);
                     }
-                });
+                }
+            }
+            
+            // Apply spacing to all affected paragraphs
+            paragraphs.forEach(para => {
+                applySpacingToParagraph(para, spacing);
             });
             
-            // After changing line spacing, check for overflow
+            // Update current default for new paragraphs
+            currentLineSpacing = parseFloat(spacing);
+            
+            // Update the toolbar display
+            updateToolbarState();
+            
+            // Check for overflow after spacing change
             setTimeout(() => {
                 checkPageOverflow();
             }, 100);
             
-            showStatus(`Line spacing set to ${spacing === '1' ? 'single' : spacing === '1.5' ? '1.5' : spacing === '2' ? 'double' : spacing + 'x'}`);
+            // Show status
+            const label = getSpacingLabel(spacing);
+            showStatus(`Line spacing set to ${label}`);
+        }
+        
+        // Get readable label for spacing value
+        function getSpacingLabel(spacing) {
+            const labels = {
+                '1': 'single',
+                '1.15': '1.15',
+                '1.5': '1.5',
+                '2': 'double',
+                '2.5': '2.5',
+                '3': 'triple'
+            };
+            return labels[spacing] || `${spacing}x`;
         }
 
         function insertImage() {
@@ -876,6 +1020,13 @@
             document.querySelectorAll('.document-container').forEach((container, index) => {
                 const content = container.querySelector('.editable-content');
                 if (content) {
+                    // Ensure all spacing is saved as data attributes
+                    const blocks = getBlockElements(content);
+                    blocks.forEach(block => {
+                        const spacing = getSpacingFromParagraph(block);
+                        block.setAttribute('data-line-spacing', spacing);
+                    });
+                    
                     pages.push({
                         pageNumber: index + 1,
                         content: content.innerHTML
@@ -887,10 +1038,10 @@
                 pages: pages,
                 pageCount: pages.length,
                 timestamp: new Date().toISOString(),
-                version: '2.0',
+                version: '3.0', // New version for paragraph-level spacing
                 format: 'US Letter',
                 margins: '1 inch',
-                lineSpacing: currentLineSpacing
+                defaultLineSpacing: currentLineSpacing
             };
             
             // Save to localStorage
@@ -924,17 +1075,15 @@
                     }
                     pageCount = 1;
                     
-                    if (doc.version === '2.0' && doc.pages) {
-                        // Load line spacing if available
-                        if (doc.lineSpacing) {
-                            currentLineSpacing = doc.lineSpacing;
+                    if ((doc.version === '2.0' || doc.version === '3.0') && doc.pages) {
+                        // Load default line spacing if available
+                        if (doc.lineSpacing || doc.defaultLineSpacing) {
+                            currentLineSpacing = doc.defaultLineSpacing || doc.lineSpacing;
                             // Update the dropdown
                             const spacingSelect = document.querySelector('select[onchange*="setLineSpacing"]');
                             if (spacingSelect) {
-                                spacingSelect.value = doc.lineSpacing;
+                                spacingSelect.value = currentLineSpacing;
                             }
-                            // Apply line spacing
-                            setLineSpacing(doc.lineSpacing);
                         }
                         
                         // Load multi-page document
@@ -949,6 +1098,20 @@
                                 content.innerHTML = doc.pages[i].content;
                             }
                         }
+                        
+                        // Restore paragraph spacing from data attributes
+                        document.querySelectorAll('.editable-content').forEach(content => {
+                            const blocks = getBlockElements(content);
+                            blocks.forEach(block => {
+                                const spacing = block.getAttribute('data-line-spacing');
+                                if (spacing) {
+                                    applySpacingToParagraph(block, spacing);
+                                } else if (doc.version === '2.0') {
+                                    // Legacy documents - apply default spacing
+                                    applySpacingToParagraph(block, currentLineSpacing.toString());
+                                }
+                            });
+                        });
                         
                         showStatus(`Document loaded! (${doc.pages.length} pages)`);
                     } else if (doc.content) {
@@ -1163,38 +1326,81 @@ ${content}
             }
         });
         
-        // Check on Enter key press for immediate response
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' && e.target.closest('.editable-content')) {
-                const content = e.target.closest('.editable-content');
-                const container = content.closest('.document-container');
+        // Handle Enter key for paragraph inheritance
+        function handleParagraphCreation(event) {
+            if (event.key !== 'Enter') return;
+            
+            // Get the current paragraph before the split
+            const selection = window.getSelection();
+            if (selection.rangeCount === 0) return;
+            
+            const currentPara = getContainingParagraph(selection.focusNode);
+            if (!currentPara) return;
+            
+            const currentSpacing = getSpacingFromParagraph(currentPara);
+            
+            // Store cursor position for page overflow handling
+            const content = event.target.closest('.editable-content');
+            const container = content.closest('.document-container');
+            const cursorAtEnd = selection.rangeCount > 0 && 
+                selection.getRangeAt(0).collapsed && 
+                selection.focusNode === content.lastChild;
+            
+            // Wait for browser to create new paragraph
+            setTimeout(() => {
+                const newSelection = window.getSelection();
+                if (newSelection.rangeCount === 0) return;
                 
-                // Store cursor position before checking
-                const selection = window.getSelection();
-                const cursorAtEnd = selection.rangeCount > 0 && 
-                    selection.getRangeAt(0).collapsed && 
-                    selection.focusNode === content.lastChild;
+                const newPara = getContainingParagraph(newSelection.focusNode);
+                if (newPara && newPara !== currentPara) {
+                    // Apply same spacing to new paragraph
+                    applySpacingToParagraph(newPara, currentSpacing.toString());
+                }
                 
-                setTimeout(() => {
-                    checkPageOverflow();
-                    
-                    // If we were at the end of the page and a new page was created
-                    if (cursorAtEnd) {
-                        const nextContainer = container.nextElementSibling;
-                        if (nextContainer && nextContainer.classList.contains('document-container')) {
-                            const nextContent = nextContainer.querySelector('.editable-content');
-                            if (nextContent && !nextContent.textContent.trim()) {
-                                // Focus on the new empty page
-                                nextContent.focus();
-                                const range = document.createRange();
-                                range.selectNodeContents(nextContent);
-                                range.collapse(true);
-                                selection.removeAllRanges();
-                                selection.addRange(range);
-                            }
+                // Check for page overflow
+                checkPageOverflow();
+                
+                // Handle cursor at end of page
+                if (cursorAtEnd) {
+                    const nextContainer = container.nextElementSibling;
+                    if (nextContainer && nextContainer.classList.contains('document-container')) {
+                        const nextContent = nextContainer.querySelector('.editable-content');
+                        if (nextContent && !nextContent.textContent.trim()) {
+                            // Focus on the new empty page
+                            nextContent.focus();
+                            const range = document.createRange();
+                            range.selectNodeContents(nextContent);
+                            range.collapse(true);
+                            newSelection.removeAllRanges();
+                            newSelection.addRange(range);
                         }
                     }
-                }, 50);
+                }
+            }, 10);
+        }
+        
+        // Check on Enter key press
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && e.target.closest('.editable-content')) {
+                handleParagraphCreation(e);
+            }
+            
+            // Keyboard shortcuts for line spacing
+            if (e.target.closest('.editable-content') && (e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey) {
+                switch(e.key) {
+                    case '1':
+                        e.preventDefault();
+                        setLineSpacing('1');
+                        break;
+                    case '2':
+                        e.preventDefault();
+                        setLineSpacing('2');
+                        break;
+                    case '5':
+                        e.preventDefault();
+                        setLineSpacing('1.5');
+                        break;
+                }
             }
         });
         
@@ -1224,10 +1430,74 @@ ${content}
             });
         }
         
-        // Handle paste events to check overflow
+        // Normalize paragraph structure after paste
+        function normalizeParagraphs(container) {
+            // Find all text nodes that are direct children of content area
+            const walker = document.createTreeWalker(
+                container,
+                NodeFilter.SHOW_TEXT,
+                {
+                    acceptNode: function(node) {
+                        // Skip empty text nodes
+                        if (!node.textContent.trim()) {
+                            return NodeFilter.FILTER_SKIP;
+                        }
+                        
+                        // Accept text nodes that aren't already in a block element
+                        const parent = node.parentElement;
+                        const blockTags = ['P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'BLOCKQUOTE', 'PRE', 'TD', 'TH'];
+                        
+                        // Check if we're directly in the content area or in a non-block element
+                        if (parent === container || !blockTags.includes(parent.tagName)) {
+                            return NodeFilter.FILTER_ACCEPT;
+                        }
+                        return NodeFilter.FILTER_SKIP;
+                    }
+                }
+            );
+            
+            const textNodes = [];
+            let node;
+            while (node = walker.nextNode()) {
+                textNodes.push(node);
+            }
+            
+            // Wrap loose text nodes in paragraphs
+            textNodes.forEach(textNode => {
+                const p = document.createElement('p');
+                p.setAttribute('data-line-spacing', currentLineSpacing.toString());
+                if (SPACING_CLASSES[currentLineSpacing]) {
+                    p.classList.add(SPACING_CLASSES[currentLineSpacing]);
+                } else {
+                    p.style.lineHeight = currentLineSpacing;
+                }
+                textNode.parentNode.insertBefore(p, textNode);
+                p.appendChild(textNode);
+            });
+            
+            // Ensure all block elements have spacing info
+            const blocks = getBlockElements(container);
+            blocks.forEach(block => {
+                if (!block.getAttribute('data-line-spacing')) {
+                    // Apply current default spacing
+                    applySpacingToParagraph(block, currentLineSpacing.toString());
+                }
+            });
+        }
+        
+        // Handle paste events to normalize content
         document.addEventListener('paste', (e) => {
+            if (!e.target.closest('.editable-content')) return;
+            
             setTimeout(() => {
+                const content = e.target.closest('.editable-content');
+                normalizeParagraphs(content);
+                
+                // Check page overflow after paste
                 checkPageOverflow();
+                
+                // Update toolbar
+                updateToolbarState();
             }, 100);
         });
         
@@ -1248,13 +1518,44 @@ ${content}
                 pages: pages,
                 pageCount: pages.length,
                 timestamp: new Date().toISOString(),
-                version: '2.0',
-                lineSpacing: currentLineSpacing
+                version: '3.0',
+                defaultLineSpacing: currentLineSpacing
             };
             
             localStorage.setItem('document-multipages', JSON.stringify(doc));
         }
 
+        // Ensure initial content has proper paragraph structure
+        function initializeDocument() {
+            document.querySelectorAll('.editable-content').forEach(content => {
+                // Check if content is completely empty or just whitespace
+                if (!content.innerHTML.trim() || content.innerHTML === '<br>') {
+                    // Create initial paragraph
+                    const p = document.createElement('p');
+                    p.setAttribute('data-line-spacing', currentLineSpacing.toString());
+                    if (SPACING_CLASSES[currentLineSpacing]) {
+                        p.classList.add(SPACING_CLASSES[currentLineSpacing]);
+                    } else {
+                        p.style.lineHeight = currentLineSpacing;
+                    }
+                    p.innerHTML = '<br>';
+                    content.innerHTML = '';
+                    content.appendChild(p);
+                } else {
+                    // Normalize existing content
+                    normalizeParagraphs(content);
+                }
+                
+                // Ensure all block elements have spacing
+                const blocks = getBlockElements(content);
+                blocks.forEach(block => {
+                    if (!block.getAttribute('data-line-spacing')) {
+                        applySpacingToParagraph(block, currentLineSpacing.toString());
+                    }
+                });
+            });
+        }
+        
         // Load autosave on startup
         window.onload = function() {
             // Try to load multi-page document first
@@ -1283,6 +1584,9 @@ ${content}
                     document.getElementById('document-content').innerHTML = autosave;
                 }
             }
+            
+            // Initialize document structure
+            initializeDocument();
             
             // Setup monitoring after content is loaded
             setTimeout(() => {
@@ -1322,7 +1626,6 @@ ${content}
                     // Copy computed styles
                     const computedStyle = window.getComputedStyle(firstContent);
                     newContent.style.width = computedStyle.width;
-                    newContent.style.lineHeight = currentLineSpacing;
                     newContent.style.fontSize = computedStyle.fontSize;
                     newContent.style.overflow = 'hidden';
                 }
