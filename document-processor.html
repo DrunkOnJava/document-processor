@@ -30,9 +30,11 @@
         }
         
         .document-container {
-            /* US Letter dimensions */
+            /* US Letter dimensions - FIXED SIZE */
             width: 8.5in;
             height: 11in;
+            min-height: 11in;
+            max-height: 11in;
             
             /* Standard 1 inch margins */
             padding: 1in;
@@ -45,6 +47,7 @@
             /* Page-like appearance */
             position: relative;
             overflow: hidden;
+            flex-shrink: 0;
         }
         
         /* Margin indicators */
@@ -150,11 +153,14 @@
             /* Content area = 6.5" x 9" (after 1" margins) */
             width: 100%;
             height: 9in;
+            min-height: 9in;
+            max-height: 9in;
             line-height: 1.6;
             outline: none;
             overflow: hidden;
             font-size: 12pt;
             position: relative;
+            box-sizing: border-box;
         }
         .editable-content img {
             max-width: 100%;
@@ -370,7 +376,7 @@
     <div class="document-container" id="page-1">
         <div class="margin-guides"></div>
         <div class="page-info">Page 1 | US Letter (8.5" × 11")</div>
-        <div id="document-content" class="editable-content" contenteditable="true">
+        <div id="document-content" class="editable-content" contenteditable="true" style="height: 9in; min-height: 9in; max-height: 9in;">
             <h1>Document Processing System</h1>
             <p>This is a fully editable document that Claude can control. You can:</p>
             <ul>
@@ -855,27 +861,43 @@ ${content}
                 const content = container.querySelector('.editable-content');
                 if (!content) return;
                 
+                // Get the actual content height vs available height
+                const availableHeight = content.clientHeight;
+                const contentHeight = content.scrollHeight;
+                
                 // Check if content overflows
-                if (content.scrollHeight > content.clientHeight) {
-                    // Find overflow point
-                    const pageHeight = content.clientHeight;
+                if (contentHeight > availableHeight + 2) { // Small buffer for rounding errors
+                    // Create a temporary container to measure content
+                    const tempDiv = document.createElement('div');
+                    tempDiv.style.cssText = content.style.cssText;
+                    tempDiv.style.position = 'absolute';
+                    tempDiv.style.visibility = 'hidden';
+                    tempDiv.style.height = 'auto';
+                    tempDiv.style.width = content.clientWidth + 'px';
+                    document.body.appendChild(tempDiv);
+                    
+                    // Clone and measure each child
                     const allNodes = Array.from(content.childNodes);
                     let currentHeight = 0;
                     let splitIndex = -1;
                     
-                    // Simple approach: move overflowing elements to next page
                     for (let i = 0; i < allNodes.length; i++) {
-                        const node = allNodes[i];
-                        const nodeHeight = node.nodeType === 1 ? node.offsetHeight : 20; // Estimate text node height
+                        const clone = allNodes[i].cloneNode(true);
+                        tempDiv.appendChild(clone);
                         
-                        if (currentHeight + nodeHeight > pageHeight) {
+                        const nodeHeight = tempDiv.scrollHeight - currentHeight;
+                        
+                        if (currentHeight + nodeHeight > availableHeight) {
                             splitIndex = i;
                             break;
                         }
-                        currentHeight += nodeHeight;
+                        currentHeight = tempDiv.scrollHeight;
                     }
                     
-                    if (splitIndex > 0) {
+                    // Clean up temp div
+                    document.body.removeChild(tempDiv);
+                    
+                    if (splitIndex >= 0) {
                         // Get or create next page
                         let nextContainer = container.nextElementSibling;
                         if (!nextContainer || !nextContainer.classList.contains('document-container')) {
@@ -909,6 +931,26 @@ ${content}
                 }
             });
         }
+        
+        // Enhanced input monitoring for real-time page creation
+        document.addEventListener('input', function(e) {
+            if (e.target.closest('.editable-content')) {
+                // Check for overflow more frequently during typing
+                clearTimeout(window.overflowTimeout);
+                window.overflowTimeout = setTimeout(() => {
+                    checkPageOverflow();
+                }, 100);
+            }
+        });
+        
+        // Check on Enter key press for immediate response
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && e.target.closest('.editable-content')) {
+                setTimeout(() => {
+                    checkPageOverflow();
+                }, 50);
+            }
+        });
         
         // Monitor content changes
         let contentObserver;
@@ -1020,10 +1062,24 @@ ${content}
             newPage.innerHTML = `
                 <div class="margin-guides"></div>
                 <div class="page-info">Page ${pageCount} | US Letter (8.5" × 11")</div>
-                <div class="editable-content" contenteditable="true">
-                    <p style="color: #999; font-style: italic;">Page ${pageCount} - Continue your content here...</p>
+                <div class="editable-content" contenteditable="true" style="height: 9in; min-height: 9in; max-height: 9in;">
                 </div>
             `;
+            
+            // Copy exact styles from first page to ensure consistency
+            const firstPage = document.getElementById('page-1');
+            if (firstPage) {
+                const firstContent = firstPage.querySelector('.editable-content');
+                const newContent = newPage.querySelector('.editable-content');
+                if (firstContent && newContent) {
+                    // Copy computed styles
+                    const computedStyle = window.getComputedStyle(firstContent);
+                    newContent.style.width = computedStyle.width;
+                    newContent.style.lineHeight = computedStyle.lineHeight;
+                    newContent.style.fontSize = computedStyle.fontSize;
+                    newContent.style.overflow = 'hidden';
+                }
+            }
             
             // Insert before the closing div of page-wrapper
             const lastPage = pageWrapper.querySelector('.document-container:last-of-type');
