@@ -478,9 +478,14 @@
                     checkElement = checkElement.parentElement;
                 }
                 
+                // If no line height found, use the current default
+                if (lineHeight === null) {
+                    lineHeight = currentLineSpacing;
+                }
+                
                 // Update the line spacing dropdown to show current value
                 const spacingSelect = document.getElementById('lineSpacingSelect');
-                if (spacingSelect && lineHeight !== null) {
+                if (spacingSelect) {
                     // Find closest matching option
                     const options = Array.from(spacingSelect.options);
                     let closestOption = options[0];
@@ -492,6 +497,12 @@
                             closestDiff = diff;
                             closestOption = option;
                         }
+                    });
+                    
+                    // First, reset all option texts to their original values
+                    options.forEach(option => {
+                        const baseText = option.text.split(' (')[0]; // Remove any existing parentheses
+                        option.text = baseText;
                     });
                     
                     // Update the label to show actual value if different
@@ -513,6 +524,17 @@
         document.addEventListener('click', function(e) {
             if (e.target.closest('.editable-content')) {
                 setTimeout(updateToolbarState, 10);
+            }
+        });
+        
+        // Update toolbar state on keyboard navigation
+        document.addEventListener('keyup', function(e) {
+            if (e.target.closest('.editable-content')) {
+                // Update on arrow keys, page up/down, home/end
+                if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 
+                     'PageUp', 'PageDown', 'Home', 'End'].includes(e.key)) {
+                    setTimeout(updateToolbarState, 10);
+                }
             }
         });
 
