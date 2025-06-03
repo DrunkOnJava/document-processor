@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Processor - US Letter Format</title>
+    <style>
+        /* Page setup for US Letter (8.5" x 11") */
+        @page {
+            size: letter;
+            margin: 1in;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        /* Page container wrapper */
+        .page-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .document-container {
+            /* US Letter dimensions */
+            width: 8.5in;
+            height: 11in;
+            
+            /* Standard 1 inch margins */
+            padding: 1in;
+            box-sizing: border-box;
+            
+            /* Visual styling */
+            background: white;
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+            
+            /* Page-like appearance */
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Margin indicators */
+        .margin-guides {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .show-margins .margin-guides {
+            opacity: 1;
+        }
+        
+        .margin-guides::before {
+            content: '';
+            position: absolute;
+            top: 1in;
+            left: 1in;
+            right: 1in;
+            bottom: 1in;
+            border: 1px dashed #ccc;
+        }
+        
+        /* Page info display */
+        .page-info {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 5px 10px;
+            font-size: 12px;
+            border-radius: 3px;
+            z-index: 10;
+        }
+        
+        /* Page break visual indicator */
+        .document-container + .document-container {
+            margin-top: 20px;
+        }
+        
+        /* Print styles */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            
+            .toolbar,
+            .format-buttons,
+            .page-info,
+            #status {
+                display: none !important;
+            }
+            
+            .document-container {
+                box-shadow: none;
+                margin: 0;
+                page-break-after: always;
+                break-after: page;
+            }
+            
+            .document-container:last-child {
+                page-break-after: auto;
+            }
+            
+            .margin-guides {
+                display: none !important;
+            }
+        }
+        .toolbar {
+            position: sticky;
+            top: 0;
+            background: #333;
+            color: white;
+            padding: 10px 20px;
+            width: 100%;
+            max-width: 8.5in;
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            border-radius: 4px 4px 0 0;
+            margin-bottom: 0;
+        }
+        .toolbar button {
+            background: #555;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .toolbar button:hover {
+            background: #666;
+        }
+        .editable-content {
+            /* Content area = 6.5" x 9" (after 1" margins) */
+            width: 100%;
+            height: 9in;
+            line-height: 1.6;
+            outline: none;
+            overflow: hidden;
+            font-size: 12pt;
+            position: relative;
+        }
+        .editable-content img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 20px 0;
+        }
+        .image-container {
+            position: relative;
+            display: inline-block;
+        }
+        .image-container .image-controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: none;
+            gap: 5px;
+        }
+        .image-container:hover .image-controls {
+            display: flex;
+        }
+        .image-controls button {
+            background: rgba(0,0,0,0.7);
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .format-buttons {
+            margin: 10px 0;
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            max-width: 8.5in;
+            background: white;
+            padding: 10px;
+            border-radius: 0 0 4px 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .format-buttons button {
+            padding: 5px 10px;
+            border: 1px solid #ddd;
+            background: white;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+        .format-buttons button:hover {
+            background: #f0f0f0;
+        }
+        #status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 4px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-wrapper">
+    <div class="toolbar">
+        <button onclick="saveDocument()">💾 Save</button>
+        <button onclick="loadDocument()">📁 Load</button>
+        <button onclick="exportAsHTML()">📤 Export HTML</button>
+        <button onclick="exportAsMarkdown()">📝 Export Markdown</button>
+        <button onclick="insertImage()">🖼️ Insert Image</button>
+        <button onclick="insertTable()">📊 Insert Table</button>
+        <button onclick="toggleEditMode()">✏️ Toggle Edit</button>
+        <button onclick="toggleMargins()">📏 Toggle Margins</button>
+        <button onclick="addNewPage()">📄 Add Page</button>
+    </div>
+
+    <div class="format-buttons">
+        <button onclick="formatText('bold')"><b>Bold</b></button>
+        <button onclick="formatText('italic')"><i>Italic</i></button>
+        <button onclick="formatText('underline')"><u>Underline</u></button>
+        <button onclick="formatText('h1')">H1</button>
+        <button onclick="formatText('h2')">H2</button>
+        <button onclick="formatText('h3')">H3</button>
+        <button onclick="formatText('ul')">• List</button>
+        <button onclick="formatText('ol')">1. List</button>
+        <button onclick="formatText('quote')">Quote</button>
+        <button onclick="formatText('code')">Code</button>
+        <button onclick="formatText('link')">🔗 Link</button>
+    </div>
+
+    <div class="document-container" id="page-1">
+        <div class="margin-guides"></div>
+        <div class="page-info">Page 1 | US Letter (8.5" × 11")</div>
+        <div id="document-content" class="editable-content" contenteditable="true">
+            <h1>Document Processing System</h1>
+            <p>This is a fully editable document that Claude can control. You can:</p>
+            <ul>
+                <li>Edit text directly</li>
+                <li>Insert and manage images</li>
+                <li>Create tables</li>
+                <li>Apply formatting</li>
+                <li>Save and load documents</li>
+                <li>Export to different formats</li>
+            </ul>
+            
+            <h2>How to Use</h2>
+            <p>1. Claude can read this entire document using the Read tool</p>
+            <p>2. Claude can edit by using the Edit tool to modify the HTML file</p>
+            <p>3. Images can be embedded as base64 or linked to local files</p>
+            <p>4. The document maintains full formatting and structure</p>
+            
+            <h2>Example Table</h2>
+            <table>
+                <tr>
+                    <th>Feature</th>
+                    <th>Status</th>
+                    <th>Notes</th>
+                </tr>
+                <tr>
+                    <td>Text Editing</td>
+                    <td>✅ Full Support</td>
+                    <td>Rich text with formatting</td>
+                </tr>
+                <tr>
+                    <td>Image Management</td>
+                    <td>✅ Full Support</td>
+                    <td>Insert, resize, delete</td>
+                </tr>
+                <tr>
+                    <td>Tables</td>
+                    <td>✅ Full Support</td>
+                    <td>Create and edit tables</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    </div>
+
+    <div id="status">Saved!</div>
+
+    <script>
+        let editMode = true;
+        let showMargins = false;
+        let pageCount = 1;
+
+        function toggleEditMode() {
+            editMode = !editMode;
+            document.getElementById('document-content').contentEditable = editMode;
+            showStatus(editMode ? 'Edit mode enabled' : 'View mode enabled');
+        }
+
+        function formatText(command) {
+            switch(command) {
+                case 'bold':
+                    document.execCommand('bold', false, null);
+                    break;
+                case 'italic':
+                    document.execCommand('italic', false, null);
+                    break;
+                case 'underline':
+                    document.execCommand('underline', false, null);
+                    break;
+                case 'h1':
+                    document.execCommand('formatBlock', false, '<h1>');
+                    break;
+                case 'h2':
+                    document.execCommand('formatBlock', false, '<h2>');
+                    break;
+                case 'h3':
+                    document.execCommand('formatBlock', false, '<h3>');
+                    break;
+                case 'ul':
+                    document.execCommand('insertUnorderedList', false, null);
+                    break;
+                case 'ol':
+                    document.execCommand('insertOrderedList', false, null);
+                    break;
+                case 'quote':
+                    document.execCommand('formatBlock', false, '<blockquote>');
+                    break;
+                case 'code':
+                    document.execCommand('formatBlock', false, '<pre>');
+                    break;
+                case 'link':
+                    const url = prompt('Enter URL:');
+                    if (url) document.execCommand('createLink', false, url);
+                    break;
+            }
+        }
+
+        function insertImage() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = `<div class="image-container">
+                        <img src="${e.target.result}" alt="Inserted image">
+                        <div class="image-controls">
+                            <button onclick="resizeImage(this, 'smaller')">-</button>
+                            <button onclick="resizeImage(this, 'larger')">+</button>
+                            <button onclick="deleteImage(this)">×</button>
+                        </div>
+                    </div>`;
+                    document.execCommand('insertHTML', false, img);
+                };
+                reader.readAsDataURL(file);
+            };
+            input.click();
+        }
+
+        function insertTable() {
+            const rows = prompt('Number of rows:', '3');
+            const cols = prompt('Number of columns:', '3');
+            if (rows && cols) {
+                let table = '<table><tbody>';
+                for (let i = 0; i < parseInt(rows); i++) {
+                    table += '<tr>';
+                    for (let j = 0; j < parseInt(cols); j++) {
+                        table += i === 0 ? '<th>Header</th>' : '<td>Cell</td>';
+                    }
+                    table += '</tr>';
+                }
+                table += '</tbody></table>';
+                document.execCommand('insertHTML', false, table);
+            }
+        }
+
+        function resizeImage(button, direction) {
+            const img = button.parentElement.parentElement.querySelector('img');
+            const currentWidth = img.offsetWidth;
+            const newWidth = direction === 'larger' ? currentWidth * 1.2 : currentWidth / 1.2;
+            img.style.width = newWidth + 'px';
+        }
+
+        function deleteImage(button) {
+            button.parentElement.parentElement.remove();
+        }
+
+        function saveDocument() {
+            saveAllPages();
+            
+            const pages = [];
+            document.querySelectorAll('.document-container').forEach((container, index) => {
+                const content = container.querySelector('.editable-content');
+                if (content) {
+                    pages.push({
+                        pageNumber: index + 1,
+                        content: content.innerHTML
+                    });
+                }
+            });
+            
+            const doc = {
+                pages: pages,
+                pageCount: pages.length,
+                timestamp: new Date().toISOString(),
+                version: '2.0',
+                format: 'US Letter',
+                margins: '1 inch'
+            };
+            
+            // Save to localStorage
+            localStorage.setItem('document-multipages', JSON.stringify(doc));
+            
+            // Also save to file for Claude to access
+            const blob = new Blob([JSON.stringify(doc, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'document-' + Date.now() + '.json';
+            a.click();
+            
+            showStatus(`Document saved! (${pages.length} page${pages.length > 1 ? 's' : ''})`);
+        }
+
+        function loadDocument() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const doc = JSON.parse(e.target.result);
+                    
+                    // Clear existing pages except the first one
+                    const containers = document.querySelectorAll('.document-container');
+                    for (let i = containers.length - 1; i > 0; i--) {
+                        containers[i].remove();
+                    }
+                    pageCount = 1;
+                    
+                    if (doc.version === '2.0' && doc.pages) {
+                        // Load multi-page document
+                        document.getElementById('document-content').innerHTML = doc.pages[0].content;
+                        
+                        // Create additional pages
+                        for (let i = 1; i < doc.pages.length; i++) {
+                            addNewPage();
+                            const newContainers = document.querySelectorAll('.document-container');
+                            const content = newContainers[i].querySelector('.editable-content');
+                            if (content) {
+                                content.innerHTML = doc.pages[i].content;
+                            }
+                        }
+                        
+                        showStatus(`Document loaded! (${doc.pages.length} pages)`);
+                    } else if (doc.content) {
+                        // Load old single-page format
+                        document.getElementById('document-content').innerHTML = doc.content;
+                        showStatus('Document loaded! (Legacy format)');
+                    }
+                    
+                    // Re-setup monitoring
+                    setTimeout(() => {
+                        setupContentMonitoring();
+                        checkPageOverflow();
+                    }, 100);
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        function exportAsHTML() {
+            const content = document.getElementById('document-content').innerHTML;
+            const fullHTML = `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Exported Document</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        img { max-width: 100%; height: auto; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 8px; }
+    </style>
+</head>
+<body>
+${content}
+</body>
+</html>`;
+            
+            const blob = new Blob([fullHTML], {type: 'text/html'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'document-' + Date.now() + '.html';
+            a.click();
+            showStatus('Exported as HTML!');
+        }
+
+        function exportAsMarkdown() {
+            // Simple HTML to Markdown conversion
+            let content = document.getElementById('document-content').innerHTML;
+            content = content.replace(/<h1[^>]*>(.*?)<\/h1>/gi, '# $1\n\n');
+            content = content.replace(/<h2[^>]*>(.*?)<\/h2>/gi, '## $1\n\n');
+            content = content.replace(/<h3[^>]*>(.*?)<\/h3>/gi, '### $1\n\n');
+            content = content.replace(/<p[^>]*>(.*?)<\/p>/gi, '$1\n\n');
+            content = content.replace(/<li[^>]*>(.*?)<\/li>/gi, '- $1\n');
+            content = content.replace(/<[^>]+>/g, '');
+            
+            const blob = new Blob([content], {type: 'text/markdown'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'document-' + Date.now() + '.md';
+            a.click();
+            showStatus('Exported as Markdown!');
+        }
+
+        function showStatus(message) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.style.display = 'block';
+            setTimeout(() => {
+                status.style.display = 'none';
+            }, 2000);
+        }
+
+        // Auto-save every 30 seconds
+        setInterval(() => {
+            if (editMode) {
+                saveAllPages();
+            }
+        }, 30000);
+        
+        // Check for overflow and create new pages
+        function checkPageOverflow() {
+            const containers = document.querySelectorAll('.document-container');
+            
+            containers.forEach((container, index) => {
+                const content = container.querySelector('.editable-content');
+                if (!content) return;
+                
+                // Check if content overflows
+                if (content.scrollHeight > content.clientHeight) {
+                    // Find overflow point
+                    const pageHeight = content.clientHeight;
+                    const allNodes = Array.from(content.childNodes);
+                    let currentHeight = 0;
+                    let splitIndex = -1;
+                    
+                    // Simple approach: move overflowing elements to next page
+                    for (let i = 0; i < allNodes.length; i++) {
+                        const node = allNodes[i];
+                        const nodeHeight = node.nodeType === 1 ? node.offsetHeight : 20; // Estimate text node height
+                        
+                        if (currentHeight + nodeHeight > pageHeight) {
+                            splitIndex = i;
+                            break;
+                        }
+                        currentHeight += nodeHeight;
+                    }
+                    
+                    if (splitIndex > 0) {
+                        // Get or create next page
+                        let nextContainer = container.nextElementSibling;
+                        if (!nextContainer || !nextContainer.classList.contains('document-container')) {
+                            addNewPage();
+                            nextContainer = container.nextElementSibling;
+                        }
+                        
+                        const nextContent = nextContainer.querySelector('.editable-content');
+                        
+                        // Move overflowing content to next page
+                        const nodesToMove = allNodes.slice(splitIndex);
+                        const fragment = document.createDocumentFragment();
+                        
+                        nodesToMove.forEach(node => {
+                            if (node.parentNode) {
+                                fragment.appendChild(node);
+                            }
+                        });
+                        
+                        // Clear placeholder text if exists
+                        if (nextContent.innerHTML.includes('Continue your content here')) {
+                            nextContent.innerHTML = '';
+                        }
+                        
+                        // Prepend to next page (in case it already has content)
+                        nextContent.insertBefore(fragment, nextContent.firstChild);
+                        
+                        // Recursively check the next page
+                        setTimeout(() => checkPageOverflow(), 100);
+                    }
+                }
+            });
+        }
+        
+        // Monitor content changes
+        let contentObserver;
+        function setupContentMonitoring() {
+            // Disconnect existing observer if any
+            if (contentObserver) {
+                contentObserver.disconnect();
+            }
+            
+            contentObserver = new MutationObserver((mutations) => {
+                // Debounce overflow check
+                clearTimeout(window.overflowTimeout);
+                window.overflowTimeout = setTimeout(() => {
+                    checkPageOverflow();
+                }, 500);
+            });
+            
+            // Observe all editable content areas
+            document.querySelectorAll('.editable-content').forEach(content => {
+                contentObserver.observe(content, {
+                    childList: true,
+                    subtree: true,
+                    characterData: true
+                });
+            });
+        }
+        
+        // Handle paste events to check overflow
+        document.addEventListener('paste', (e) => {
+            setTimeout(() => {
+                checkPageOverflow();
+            }, 100);
+        });
+        
+        // Save all pages
+        function saveAllPages() {
+            const pages = [];
+            document.querySelectorAll('.document-container').forEach((container, index) => {
+                const content = container.querySelector('.editable-content');
+                if (content) {
+                    pages.push({
+                        pageNumber: index + 1,
+                        content: content.innerHTML
+                    });
+                }
+            });
+            
+            const doc = {
+                pages: pages,
+                pageCount: pages.length,
+                timestamp: new Date().toISOString(),
+                version: '2.0'
+            };
+            
+            localStorage.setItem('document-multipages', JSON.stringify(doc));
+        }
+
+        // Load autosave on startup
+        window.onload = function() {
+            // Try to load multi-page document first
+            const multiPageDoc = localStorage.getItem('document-multipages');
+            if (multiPageDoc) {
+                const doc = JSON.parse(multiPageDoc);
+                
+                // Load first page
+                if (doc.pages && doc.pages.length > 0) {
+                    document.getElementById('document-content').innerHTML = doc.pages[0].content;
+                    
+                    // Create additional pages if needed
+                    for (let i = 1; i < doc.pages.length; i++) {
+                        addNewPage();
+                        const containers = document.querySelectorAll('.document-container');
+                        const content = containers[i].querySelector('.editable-content');
+                        if (content) {
+                            content.innerHTML = doc.pages[i].content;
+                        }
+                    }
+                }
+            } else {
+                // Fallback to old autosave
+                const autosave = localStorage.getItem('document-autosave');
+                if (autosave) {
+                    document.getElementById('document-content').innerHTML = autosave;
+                }
+            }
+            
+            // Setup monitoring after content is loaded
+            setTimeout(() => {
+                setupContentMonitoring();
+                checkPageOverflow();
+            }, 500);
+        };
+        
+        function toggleMargins() {
+            showMargins = !showMargins;
+            document.querySelectorAll('.document-container').forEach(container => {
+                container.classList.toggle('show-margins', showMargins);
+            });
+            showStatus(showMargins ? 'Margin guides shown' : 'Margin guides hidden');
+        }
+        
+        function addNewPage() {
+            pageCount++;
+            const pageWrapper = document.querySelector('.page-wrapper');
+            const newPage = document.createElement('div');
+            newPage.className = 'document-container' + (showMargins ? ' show-margins' : '');
+            newPage.id = `page-${pageCount}`;
+            newPage.innerHTML = `
+                <div class="margin-guides"></div>
+                <div class="page-info">Page ${pageCount} | US Letter (8.5" × 11")</div>
+                <div class="editable-content" contenteditable="true">
+                    <p style="color: #999; font-style: italic;">Page ${pageCount} - Continue your content here...</p>
+                </div>
+            `;
+            
+            // Insert before the closing div of page-wrapper
+            const lastPage = pageWrapper.querySelector('.document-container:last-of-type');
+            lastPage.insertAdjacentElement('afterend', newPage);
+            
+            showStatus(`Added page ${pageCount}`);
+        }
+    </script>
+</body>
+</html>

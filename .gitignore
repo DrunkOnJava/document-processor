@@ -1,0 +1,41 @@
+# Operating System Files
+.DS_Store
+Thumbs.db
+
+# Editor Files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Temporary Files
+*.tmp
+*.temp
+.cache/
+
+# Logs
+*.log
+
+# Node (if adding build tools later)
+node_modules/
+dist/
+build/
+
+# Environment Files
+.env
+.env.local
+
+# Backup Files
+*.backup
+*.bak
+
+# User Documents (privacy)
+document-*.json
+*.docx
+*.doc
+*.pdf
+
+# But keep example documents
+!example-*.json
+!demo-*.json

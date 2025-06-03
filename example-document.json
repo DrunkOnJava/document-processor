@@ -1,0 +1,17 @@
+{
+  "pages": [
+    {
+      "pageNumber": 1,
+      "content": "<h1>Welcome to Document Processor</h1><p>This is an example document demonstrating the capabilities of the Document Processor tool.</p><h2>Features Overview</h2><ul><li><strong>Rich Text Editing</strong> - Full formatting support including bold, italic, and underline text.</li><li><strong>Automatic Pagination</strong> - Content automatically flows to new pages when needed.</li><li><strong>Image Support</strong> - Embed images directly in your documents.</li><li><strong>Table Creation</strong> - Build professional tables with ease.</li></ul><h2>Why Use Document Processor?</h2><p>The Document Processor provides a seamless way to create professional documents with precise control over formatting and layout. Unlike traditional word processors, this tool gives you:</p><ol><li>Exact US Letter page dimensions</li><li>Automatic content overflow handling</li><li>Clean, distraction-free interface</li><li>No software installation required</li><li>Works in any modern browser</li></ol><blockquote><p>\"The best tool for creating print-ready documents directly in your browser.\"</p></blockquote>"
+    },
+    {
+      "pageNumber": 2,
+      "content": "<h2>Getting Started</h2><p>To begin using the Document Processor:</p><ol><li>Open the <code>document-processor.html</code> file in your browser</li><li>Start typing or paste your content</li><li>Use the formatting toolbar for styling</li><li>Save your work regularly</li></ol><h3>Keyboard Shortcuts</h3><table><tbody><tr><th>Action</th><th>Windows/Linux</th><th>Mac</th></tr><tr><td>Bold</td><td>Ctrl+B</td><td>Cmd+B</td></tr><tr><td>Italic</td><td>Ctrl+I</td><td>Cmd+I</td></tr><tr><td>Underline</td><td>Ctrl+U</td><td>Cmd+U</td></tr><tr><td>Save</td><td>Ctrl+S</td><td>Cmd+S</td></tr></tbody></table><h3>Tips for Best Results</h3><ul><li>Use the margin guides to ensure content stays within printable area</li><li>Check page breaks before printing</li><li>Export to HTML for web publishing</li><li>Save JSON files for future editing</li></ul><p><em>Happy document processing!</em></p>"
+    }
+  ],
+  "pageCount": 2,
+  "timestamp": "2024-01-20T10:30:00Z",
+  "version": "2.0",
+  "format": "US Letter",
+  "margins": "1 inch"
+}
