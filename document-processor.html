@@ -372,7 +372,7 @@
         <button onclick="alignText('center')" title="Align Center">↔️ Center</button>
         <button onclick="alignText('right')" title="Align Right">➡️ Right</button>
         <span style="border-left: 1px solid #ddd; margin: 0 5px; height: 20px;"></span>
-        <select onchange="setLineSpacing(this.value)" title="Line Spacing" style="padding: 5px 10px; border: 1px solid #ddd; background: white; cursor: pointer; border-radius: 3px;">
+        <select id="lineSpacingSelect" onchange="setLineSpacing(this.value)" title="Line Spacing" style="padding: 5px 10px; border: 1px solid #ddd; background: white; cursor: pointer; border-radius: 3px;">
             <option value="1">Single</option>
             <option value="1.15">1.15</option>
             <option value="1.5">1.5</option>
@@ -437,6 +437,84 @@
         let showMargins = false;
         let pageCount = 1;
         let currentLineSpacing = 2; // Default double-spaced
+        
+        // Update toolbar state to show current formatting
+        function updateToolbarState() {
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                let element = range.commonAncestorContainer;
+                
+                // Get parent element if we're in a text node
+                if (element.nodeType === 3) {
+                    element = element.parentElement;
+                }
+                
+                // Find the line spacing of current element
+                let lineHeight = null;
+                let checkElement = element;
+                
+                while (checkElement && checkElement !== document.body) {
+                    const computedStyle = window.getComputedStyle(checkElement);
+                    const computedLineHeight = computedStyle.lineHeight;
+                    
+                    // Check if element has explicit line-height style
+                    if (checkElement.style.lineHeight) {
+                        lineHeight = parseFloat(checkElement.style.lineHeight);
+                        break;
+                    }
+                    
+                    // Check computed line-height (but only if it's not 'normal')
+                    if (computedLineHeight !== 'normal') {
+                        // Convert px values to multiplier
+                        const fontSize = parseFloat(computedStyle.fontSize);
+                        const lineHeightPx = parseFloat(computedLineHeight);
+                        if (!isNaN(lineHeightPx) && !isNaN(fontSize) && fontSize > 0) {
+                            lineHeight = lineHeightPx / fontSize;
+                            break;
+                        }
+                    }
+                    
+                    checkElement = checkElement.parentElement;
+                }
+                
+                // Update the line spacing dropdown to show current value
+                const spacingSelect = document.getElementById('lineSpacingSelect');
+                if (spacingSelect && lineHeight !== null) {
+                    // Find closest matching option
+                    const options = Array.from(spacingSelect.options);
+                    let closestOption = options[0];
+                    let closestDiff = Math.abs(parseFloat(closestOption.value) - lineHeight);
+                    
+                    options.forEach(option => {
+                        const diff = Math.abs(parseFloat(option.value) - lineHeight);
+                        if (diff < closestDiff) {
+                            closestDiff = diff;
+                            closestOption = option;
+                        }
+                    });
+                    
+                    // Update the label to show actual value if different
+                    if (Math.abs(parseFloat(closestOption.value) - lineHeight) > 0.01) {
+                        // Show actual value in parentheses
+                        const originalText = closestOption.text.split(' (')[0]; // Remove any existing parentheses
+                        closestOption.text = `${originalText} (${lineHeight.toFixed(2)})`;
+                    }
+                    
+                    spacingSelect.value = closestOption.value;
+                }
+            }
+        }
+        
+        // Update toolbar state on selection change
+        document.addEventListener('selectionchange', updateToolbarState);
+        
+        // Update toolbar state on click
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.editable-content')) {
+                setTimeout(updateToolbarState, 10);
+            }
+        });
 
         function toggleEditMode() {
             editMode = !editMode;
@@ -466,9 +544,13 @@
                     break;
                 case 'ul':
                     document.execCommand('insertUnorderedList', false, null);
+                    // Apply 1.5 spacing to new unordered lists
+                    setTimeout(() => applyListSpacing(), 50);
                     break;
                 case 'ol':
                     document.execCommand('insertOrderedList', false, null);
+                    // Apply 1.5 spacing to new ordered lists
+                    setTimeout(() => applyListSpacing(), 50);
                     break;
                 case 'quote':
                     document.execCommand('formatBlock', false, '<blockquote>');
@@ -480,6 +562,33 @@
                     const url = prompt('Enter URL:');
                     if (url) document.execCommand('createLink', false, url);
                     break;
+            }
+            
+            // Update toolbar after formatting
+            updateToolbarState();
+        }
+        
+        function applyListSpacing() {
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                let listElement = range.commonAncestorContainer;
+                
+                // Find the list element
+                while (listElement && listElement.nodeType !== 1) {
+                    listElement = listElement.parentElement;
+                }
+                
+                while (listElement && listElement.nodeName !== 'UL' && listElement.nodeName !== 'OL') {
+                    listElement = listElement.parentElement;
+                }
+                
+                if (listElement && (listElement.nodeName === 'UL' || listElement.nodeName === 'OL')) {
+                    // Only apply if the list doesn't already have a line-height set
+                    if (!listElement.style.lineHeight) {
+                        listElement.style.lineHeight = '1.5';
+                    }
+                }
             }
         }
         
