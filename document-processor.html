@@ -155,7 +155,7 @@
             height: 9in;
             min-height: 9in;
             max-height: 9in;
-            line-height: 1.6;
+            line-height: 2; /* Default double-spaced */
             outline: none;
             overflow: hidden;
             font-size: 12pt;
@@ -371,6 +371,15 @@
         <button onclick="alignText('left')" title="Align Left">⬅️ Left</button>
         <button onclick="alignText('center')" title="Align Center">↔️ Center</button>
         <button onclick="alignText('right')" title="Align Right">➡️ Right</button>
+        <span style="border-left: 1px solid #ddd; margin: 0 5px; height: 20px;"></span>
+        <select onchange="setLineSpacing(this.value)" title="Line Spacing" style="padding: 5px 10px; border: 1px solid #ddd; background: white; cursor: pointer; border-radius: 3px;">
+            <option value="1">Single</option>
+            <option value="1.15">1.15</option>
+            <option value="1.5">1.5</option>
+            <option value="2" selected>Double</option>
+            <option value="2.5">2.5</option>
+            <option value="3">Triple</option>
+        </select>
     </div>
 
     <div class="document-container" id="page-1">
@@ -427,6 +436,7 @@
         let editMode = true;
         let showMargins = false;
         let pageCount = 1;
+        let currentLineSpacing = 2; // Default double-spaced
 
         function toggleEditMode() {
             editMode = !editMode;
@@ -508,6 +518,30 @@
                     container = container.parentNode;
                 }
             }
+        }
+        
+        function setLineSpacing(spacing) {
+            currentLineSpacing = parseFloat(spacing);
+            
+            // Apply to all editable content areas
+            document.querySelectorAll('.editable-content').forEach(content => {
+                content.style.lineHeight = currentLineSpacing;
+                
+                // Also apply to all child elements to ensure consistency
+                const allElements = content.querySelectorAll('*');
+                allElements.forEach(el => {
+                    if (!el.style.lineHeight || el.style.lineHeight === 'inherit') {
+                        el.style.lineHeight = 'inherit';
+                    }
+                });
+            });
+            
+            // After changing line spacing, check for overflow
+            setTimeout(() => {
+                checkPageOverflow();
+            }, 100);
+            
+            showStatus(`Line spacing set to ${spacing === '1' ? 'single' : spacing === '1.5' ? '1.5' : spacing === '2' ? 'double' : spacing + 'x'}`);
         }
 
         function insertImage() {
@@ -724,7 +758,8 @@
                 timestamp: new Date().toISOString(),
                 version: '2.0',
                 format: 'US Letter',
-                margins: '1 inch'
+                margins: '1 inch',
+                lineSpacing: currentLineSpacing
             };
             
             // Save to localStorage
@@ -759,6 +794,18 @@
                     pageCount = 1;
                     
                     if (doc.version === '2.0' && doc.pages) {
+                        // Load line spacing if available
+                        if (doc.lineSpacing) {
+                            currentLineSpacing = doc.lineSpacing;
+                            // Update the dropdown
+                            const spacingSelect = document.querySelector('select[onchange*="setLineSpacing"]');
+                            if (spacingSelect) {
+                                spacingSelect.value = doc.lineSpacing;
+                            }
+                            // Apply line spacing
+                            setLineSpacing(doc.lineSpacing);
+                        }
+                        
                         // Load multi-page document
                         document.getElementById('document-content').innerHTML = doc.pages[0].content;
                         
@@ -1070,7 +1117,8 @@ ${content}
                 pages: pages,
                 pageCount: pages.length,
                 timestamp: new Date().toISOString(),
-                version: '2.0'
+                version: '2.0',
+                lineSpacing: currentLineSpacing
             };
             
             localStorage.setItem('document-multipages', JSON.stringify(doc));
@@ -1143,7 +1191,7 @@ ${content}
                     // Copy computed styles
                     const computedStyle = window.getComputedStyle(firstContent);
                     newContent.style.width = computedStyle.width;
-                    newContent.style.lineHeight = computedStyle.lineHeight;
+                    newContent.style.lineHeight = currentLineSpacing;
                     newContent.style.fontSize = computedStyle.fontSize;
                     newContent.style.overflow = 'hidden';
                 }
