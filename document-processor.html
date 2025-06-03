@@ -901,8 +901,7 @@ ${content}
                         // Get or create next page
                         let nextContainer = container.nextElementSibling;
                         if (!nextContainer || !nextContainer.classList.contains('document-container')) {
-                            addNewPage();
-                            nextContainer = container.nextElementSibling;
+                            nextContainer = addNewPage();
                         }
                         
                         const nextContent = nextContainer.querySelector('.editable-content');
@@ -925,6 +924,49 @@ ${content}
                         // Prepend to next page (in case it already has content)
                         nextContent.insertBefore(fragment, nextContent.firstChild);
                         
+                        // Move cursor to the beginning of the moved content on the new page
+                        if (nodesToMove.length > 0) {
+                            // Focus the next page's content
+                            nextContent.focus();
+                            
+                            // Place cursor at the beginning of the moved content
+                            const range = document.createRange();
+                            const selection = window.getSelection();
+                            
+                            // Find first text node in the moved content
+                            let firstTextNode = null;
+                            function findFirstTextNode(node) {
+                                if (node.nodeType === 3 && node.textContent.trim()) {
+                                    return node;
+                                }
+                                for (let child of node.childNodes) {
+                                    const found = findFirstTextNode(child);
+                                    if (found) return found;
+                                }
+                                return null;
+                            }
+                            
+                            // Try to find a good cursor position
+                            if (fragment.firstChild) {
+                                firstTextNode = findFirstTextNode(nextContent);
+                            }
+                            
+                            if (firstTextNode) {
+                                range.setStart(firstTextNode, 0);
+                                range.collapse(true);
+                            } else {
+                                // If no text node, place at start of content
+                                range.selectNodeContents(nextContent);
+                                range.collapse(true);
+                            }
+                            
+                            selection.removeAllRanges();
+                            selection.addRange(range);
+                            
+                            // Scroll the new page into view
+                            nextContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                        
                         // Recursively check the next page
                         setTimeout(() => checkPageOverflow(), 100);
                     }
@@ -946,8 +988,34 @@ ${content}
         // Check on Enter key press for immediate response
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Enter' && e.target.closest('.editable-content')) {
+                const content = e.target.closest('.editable-content');
+                const container = content.closest('.document-container');
+                
+                // Store cursor position before checking
+                const selection = window.getSelection();
+                const cursorAtEnd = selection.rangeCount > 0 && 
+                    selection.getRangeAt(0).collapsed && 
+                    selection.focusNode === content.lastChild;
+                
                 setTimeout(() => {
                     checkPageOverflow();
+                    
+                    // If we were at the end of the page and a new page was created
+                    if (cursorAtEnd) {
+                        const nextContainer = container.nextElementSibling;
+                        if (nextContainer && nextContainer.classList.contains('document-container')) {
+                            const nextContent = nextContainer.querySelector('.editable-content');
+                            if (nextContent && !nextContent.textContent.trim()) {
+                                // Focus on the new empty page
+                                nextContent.focus();
+                                const range = document.createRange();
+                                range.selectNodeContents(nextContent);
+                                range.collapse(true);
+                                selection.removeAllRanges();
+                                selection.addRange(range);
+                            }
+                        }
+                    }
                 }, 50);
             }
         });
@@ -1053,7 +1121,7 @@ ${content}
             showStatus(showMargins ? 'Margin guides shown' : 'Margin guides hidden');
         }
         
-        function addNewPage() {
+        function addNewPage(focusNewPage = false) {
             pageCount++;
             const pageWrapper = document.querySelector('.page-wrapper');
             const newPage = document.createElement('div');
@@ -1091,7 +1159,27 @@ ${content}
             // Update any existing TOCs
             updateAllTOCs();
             
+            // Focus on new page if requested
+            if (focusNewPage) {
+                const newContent = newPage.querySelector('.editable-content');
+                if (newContent) {
+                    newContent.focus();
+                    // Place cursor at start
+                    const range = document.createRange();
+                    const selection = window.getSelection();
+                    range.selectNodeContents(newContent);
+                    range.collapse(true);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                    
+                    // Scroll to view
+                    newPage.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+            
             showStatus(`Added page ${pageCount}`);
+            
+            return newPage;
         }
     </script>
 </body>
