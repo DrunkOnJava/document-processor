@@ -182,6 +182,82 @@
                 text-align: inherit !important;
             }
         }
+        
+        /* Table of Contents styles */
+        .table-of-contents {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 20px;
+            margin: 20px 0;
+            page-break-inside: avoid;
+        }
+        
+        .table-of-contents h2 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 18pt;
+            text-align: center;
+            color: #333;
+        }
+        
+        .toc-entry {
+            display: flex;
+            align-items: baseline;
+            margin-bottom: 8px;
+            position: relative;
+        }
+        
+        .toc-entry.toc-level-1 {
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        
+        .toc-entry.toc-level-2 {
+            margin-left: 20px;
+        }
+        
+        .toc-entry.toc-level-3 {
+            margin-left: 40px;
+            font-size: 0.9em;
+        }
+        
+        .toc-title {
+            flex: 0 0 auto;
+            max-width: 80%;
+            padding-right: 10px;
+        }
+        
+        .toc-dots {
+            flex: 1 1 auto;
+            border-bottom: 1px dotted #999;
+            margin: 0 5px;
+            min-width: 20px;
+            height: 0.8em;
+        }
+        
+        .toc-page {
+            flex: 0 0 auto;
+            padding-left: 10px;
+            font-weight: normal;
+        }
+        
+        .toc-link {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        .toc-link:hover {
+            text-decoration: underline;
+        }
+        
+        .toc-update-notice {
+            font-size: 0.8em;
+            color: #666;
+            text-align: center;
+            margin-top: 10px;
+            font-style: italic;
+        }
         .image-container {
             position: relative;
             display: inline-block;
@@ -267,6 +343,7 @@
         <button onclick="exportAsMarkdown()">📝 Export Markdown</button>
         <button onclick="insertImage()">🖼️ Insert Image</button>
         <button onclick="insertTable()">📊 Insert Table</button>
+        <button onclick="insertTOC()">📑 Insert TOC</button>
         <button onclick="toggleEditMode()">✏️ Toggle Edit</button>
         <button onclick="toggleMargins()">📏 Toggle Margins</button>
         <button onclick="addNewPage()">📄 Add Page</button>
@@ -466,6 +543,149 @@
                 document.execCommand('insertHTML', false, table);
             }
         }
+        
+        function insertTOC() {
+            // Create a unique ID for this TOC
+            const tocId = 'toc-' + Date.now();
+            
+            const tocHTML = `
+                <div class="table-of-contents" id="${tocId}" contenteditable="false">
+                    <h2>Table of Contents</h2>
+                    <div class="toc-content">
+                        <p style="text-align: center; color: #999;">Table of Contents will be generated here...</p>
+                    </div>
+                    <div class="toc-update-notice">Auto-updates when headings change</div>
+                </div>
+                <p><br></p>
+            `;
+            
+            document.execCommand('insertHTML', false, tocHTML);
+            
+            // Update TOC immediately
+            setTimeout(() => {
+                updateAllTOCs();
+            }, 100);
+            
+            showStatus('Table of Contents inserted!');
+        }
+        
+        function updateAllTOCs() {
+            // Find all TOC elements
+            const tocs = document.querySelectorAll('.table-of-contents');
+            
+            tocs.forEach(toc => {
+                updateTOC(toc);
+            });
+        }
+        
+        function updateTOC(tocElement) {
+            // Collect all headings from all pages
+            const headings = [];
+            const containers = document.querySelectorAll('.document-container');
+            
+            containers.forEach((container, pageIndex) => {
+                const pageNumber = pageIndex + 1;
+                const content = container.querySelector('.editable-content');
+                if (!content) return;
+                
+                // Find all headings
+                const pageHeadings = content.querySelectorAll('h1, h2, h3');
+                
+                pageHeadings.forEach(heading => {
+                    // Skip if it's inside a TOC
+                    if (heading.closest('.table-of-contents')) return;
+                    
+                    const level = parseInt(heading.tagName.charAt(1));
+                    const text = heading.textContent.trim();
+                    
+                    if (text) {
+                        // Create a unique ID for the heading if it doesn't have one
+                        if (!heading.id) {
+                            heading.id = 'heading-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+                        }
+                        
+                        headings.push({
+                            level: level,
+                            text: text,
+                            id: heading.id,
+                            pageNumber: pageNumber
+                        });
+                    }
+                });
+            });
+            
+            // Generate TOC HTML
+            let tocHTML = '';
+            
+            if (headings.length === 0) {
+                tocHTML = '<p style="text-align: center; color: #999;">No headings found. Add headings (H1, H2, H3) to generate table of contents.</p>';
+            } else {
+                headings.forEach(heading => {
+                    tocHTML += `
+                        <div class="toc-entry toc-level-${heading.level}">
+                            <span class="toc-title">
+                                <a href="#${heading.id}" class="toc-link" onclick="scrollToHeading('${heading.id}'); return false;">
+                                    ${heading.text}
+                                </a>
+                            </span>
+                            <span class="toc-dots"></span>
+                            <span class="toc-page">${heading.pageNumber}</span>
+                        </div>
+                    `;
+                });
+            }
+            
+            // Update the TOC content
+            const tocContent = tocElement.querySelector('.toc-content');
+            if (tocContent) {
+                tocContent.innerHTML = tocHTML;
+            }
+        }
+        
+        function scrollToHeading(headingId) {
+            const heading = document.getElementById(headingId);
+            if (heading) {
+                heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                
+                // Highlight the heading briefly
+                const originalBackground = heading.style.backgroundColor;
+                heading.style.backgroundColor = '#ffeb3b';
+                heading.style.transition = 'background-color 0.3s';
+                
+                setTimeout(() => {
+                    heading.style.backgroundColor = originalBackground;
+                }, 2000);
+            }
+        }
+        
+        // Add TOC update to content monitoring
+        const originalSetupContentMonitoring = setupContentMonitoring;
+        setupContentMonitoring = function() {
+            originalSetupContentMonitoring();
+            
+            // Also monitor for heading changes
+            if (contentObserver) {
+                contentObserver.disconnect();
+            }
+            
+            contentObserver = new MutationObserver((mutations) => {
+                // Debounce overflow check
+                clearTimeout(window.overflowTimeout);
+                window.overflowTimeout = setTimeout(() => {
+                    checkPageOverflow();
+                    updateAllTOCs(); // Update TOCs when content changes
+                }, 500);
+            });
+            
+            // Observe all editable content areas
+            document.querySelectorAll('.editable-content').forEach(content => {
+                contentObserver.observe(content, {
+                    childList: true,
+                    subtree: true,
+                    characterData: true
+                });
+            });
+        };
 
         function resizeImage(button, direction) {
             const img = button.parentElement.parentElement.querySelector('img');
@@ -779,6 +999,7 @@ ${content}
             setTimeout(() => {
                 setupContentMonitoring();
                 checkPageOverflow();
+                updateAllTOCs(); // Update any existing TOCs
             }, 500);
         };
         
@@ -807,6 +1028,12 @@ ${content}
             // Insert before the closing div of page-wrapper
             const lastPage = pageWrapper.querySelector('.document-container:last-of-type');
             lastPage.insertAdjacentElement('afterend', newPage);
+            
+            // Re-setup content monitoring for new page
+            setupContentMonitoring();
+            
+            // Update any existing TOCs
+            updateAllTOCs();
             
             showStatus(`Added page ${pageCount}`);
         }

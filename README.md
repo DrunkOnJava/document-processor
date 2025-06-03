@@ -24,6 +24,15 @@ A powerful, browser-based document processing tool that provides full control ov
 - **Lists**: Ordered and unordered
 - **Quotes & Code**: Blockquotes and code blocks
 - **Links**: Clickable hyperlinks
+- **Text Alignment**: Left, center, and right alignment
+
+### 📑 Table of Contents
+- **Automatic Generation**: Creates TOC from all headings in document
+- **Live Updates**: Automatically updates when headings change
+- **Page Numbers**: Shows accurate page numbers for each heading
+- **Click Navigation**: Click any TOC entry to jump to that section
+- **Multi-level Support**: Handles H1, H2, and H3 headings with proper indentation
+- **Smart Formatting**: Professional dotted lines between titles and page numbers
 
 ### 🖼️ Image Management
 - Drag & drop image insertion
