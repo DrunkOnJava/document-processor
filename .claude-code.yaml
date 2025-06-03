@@ -1,0 +1,56 @@
+version: '1.0'
+context:
+  auto_load: true
+  files:
+    - .llm-context
+    - ARCHITECTURE.md
+    - README.md
+  
+presets:
+  security_review:
+    description: "Comprehensive security analysis for document processor"
+    include:
+      - src/**/*.js
+      - src/**/*.html
+    exclude:
+      - "**/*.test.js"
+      - "**/*.spec.js"
+    prompts:
+      - "Check for XSS vulnerabilities in contentEditable handling"
+      - "Review localStorage usage for security issues"
+      - "Identify potential injection risks in HTML export"
+      - "Check for unsafe innerHTML usage"
+  
+  refactor_large:
+    description: "Refactor files exceeding size limits"
+    auto_detect: true
+    threshold: 500
+    prompts:
+      - "Split into logical modules"
+      - "Preserve all functionality"
+      - "Add comprehensive tests"
+      - "Maintain backward compatibility"
+  
+  test_coverage:
+    description: "Improve test coverage for critical functions"
+    include:
+      - src/js/core/*.js
+      - src/js/components/*.js
+    exclude:
+      - "**/*.test.js"
+    prompts:
+      - "Add unit tests for pagination logic"
+      - "Test edge cases for content overflow"
+      - "Include tests for export functionality"
+      - "Test line spacing inheritance"
+  
+  performance_review:
+    description: "Analyze and optimize performance bottlenecks"
+    include:
+      - src/js/core/PageManager.js
+      - src/js/core/ContentEditor.js
+    prompts:
+      - "Identify DOM manipulation bottlenecks"
+      - "Optimize pagination calculations"
+      - "Review MutationObserver usage"
+      - "Suggest debouncing improvements"

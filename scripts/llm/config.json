@@ -1,0 +1,36 @@
+{
+  "thresholds": {
+    "fileSizeSoftLimit": 300,
+    "fileSizeHardLimit": 500,
+    "fileSizeKB": 50,
+    "contextTokenLimit": 15000,
+    "parallelFileReads": 10
+  },
+  "customLanguages": {
+    "documentProcessor": {
+      "patterns": ["DocumentEngine", "PageManager", "ContentEditor"],
+      "description": "Document processor specific components"
+    }
+  },
+  "ignorePatterns": {
+    "custom": [
+      "document-processor.html",
+      "*.backup.js",
+      "compress-projects.sh",
+      "restart-icloud.sh"
+    ]
+  },
+  "namingConvention": "strict",
+  "performance": {
+    "maxConcurrentReads": 20,
+    "enableParallelProcessing": true
+  },
+  "projectSpecific": {
+    "criticalModules": [
+      "PageManager",
+      "DocumentEngine",
+      "ContentEditor"
+    ],
+    "preserveCompatibility": true
+  }
+}

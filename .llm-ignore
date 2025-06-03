@@ -1,0 +1,45 @@
+# Secrets and credentials
+.env
+*.pem
+*.key
+**/secrets/
+
+# Generated files
+dist/
+build/
+*.generated.js
+*.min.js
+*.bundle.js
+
+# Large datasets
+data/*.csv
+fixtures/*.json
+
+# Dependencies
+node_modules/
+vendor/
+
+# IDE and OS files
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Build artifacts
+*.map
+*.chunk.js

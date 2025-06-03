@@ -1,0 +1,61 @@
+/**
+ * @file print.css
+ * @description Print-specific styles for document processor
+ */
+
+/* Print styles */
+@media print {
+    body {
+        background: white;
+        padding: 0;
+    }
+    
+    .toolbar,
+    .toolbar-container,
+    .format-buttons,
+    .page-info,
+    #status {
+        display: none !important;
+    }
+    
+    .document-container {
+        box-shadow: none;
+        margin: 0;
+        page-break-after: always;
+        break-after: page;
+    }
+    
+    .document-container:last-child {
+        page-break-after: auto;
+    }
+    
+    .margin-guides {
+        display: none !important;
+    }
+    
+    /* Ensure alignment is preserved in print */
+    [style*="text-align"] {
+        text-align: inherit !important;
+    }
+    
+    /* Hide image controls in print */
+    .image-controls {
+        display: none !important;
+    }
+    
+    /* Ensure tables don't break across pages */
+    table {
+        page-break-inside: avoid;
+    }
+    
+    /* Keep headings with their content */
+    h1, h2, h3, h4, h5, h6 {
+        page-break-after: avoid;
+    }
+    
+    /* Avoid breaking inside paragraphs */
+    p {
+        orphans: 3;
+        widows: 3;
+    }
+}

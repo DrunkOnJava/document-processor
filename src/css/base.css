@@ -1,0 +1,92 @@
+/**
+ * @file base.css
+ * @description Base styles and resets for document processor
+ */
+
+/* Base reset and typography */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background: #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Status message */
+#status {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 4px;
+    display: none;
+    z-index: 1000;
+}
+
+/* Image container and controls */
+.image-container {
+    position: relative;
+    display: inline-block;
+    margin: 20px 0;
+}
+
+.image-container .image-controls {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: none;
+    gap: 5px;
+}
+
+.image-container:hover .image-controls {
+    display: flex;
+}
+
+.image-controls button {
+    background: rgba(0,0,0,0.7);
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.image-controls button:hover {
+    background: rgba(0,0,0,0.9);
+}
+
+/* Tables */
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 20px 0;
+}
+
+table, th, td {
+    border: 1px solid #ddd;
+}
+
+th, td {
+    padding: 8px;
+    text-align: left;
+}
+
+th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+}
+
+/* Links */
+a {
+    color: #0066cc;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}

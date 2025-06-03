@@ -1,6 +1,6 @@
 # Document Processor
 
-A powerful, browser-based document processing tool that provides full control over text, images, and formatting with automatic pagination and US Letter format support.
+A modular, browser-based document processing system that provides US Letter format (8.5" × 11") documents with automatic pagination and rich text editing capabilities. Now featuring a clean, LLM-optimized architecture for enhanced maintainability and extensibility.
 
 ![Document Processor Screenshot](screenshot.png)
 
@@ -61,10 +61,39 @@ A powerful, browser-based document processing tool that provides full control ov
 - Real-time content monitoring
 - Print-optimized CSS (hides UI elements)
 
+## 🛠️ Installation
+
+### Quick Start (No Build Required)
+1. Clone the repository
+2. Open `src/index.html` in a modern web browser
+3. Start creating documents!
+
+### Development Setup
+```bash
+# Clone the repository
+git clone https://github.com/DrunkOnJava/document-processor.git
+cd document-processor
+
+# Install dependencies
+npm install
+
+# Generate LLM context
+npm run llm:init
+
+# Start development (if webpack configured)
+npm run dev
+```
+
 ## How to Use
+
+### For Users
 
 1. **Open the Document Processor**
    ```bash
+   # For the modular version
+   open src/index.html
+   
+   # For the legacy monolithic version
    open document-processor.html
    ```
 
@@ -92,6 +121,38 @@ A powerful, browser-based document processing tool that provides full control ov
    - 📤 Export HTML: Creates standalone HTML file
    - 📝 Export Markdown: Converts to Markdown format
 
+## 📁 Project Structure
+
+```
+document-processor/
+├── src/
+│   ├── index.html          # Main HTML entry point
+│   ├── js/
+│   │   ├── index.js        # Application entry point
+│   │   ├── core/           # Core modules (DocumentEngine, PageManager)
+│   │   ├── components/     # UI components (ContentEditor, LineSpacing, TOC)
+│   │   ├── utils/          # Utilities (Constants, DOMUtils, Storage)
+│   │   └── export/         # Export modules (HTML, Markdown, JSON)
+│   └── styles/             # Modular CSS files
+├── scripts/
+│   └── llm/                # LLM optimization tools
+├── docs/                   # Documentation
+└── tests/                  # Test suites
+```
+
+## 🏗️ Architecture
+
+The project follows a modular architecture optimized for both human and AI comprehension:
+
+- **DocumentEngine**: Central orchestrator coordinating all modules
+- **PageManager**: Critical module handling pagination and overflow
+- **ContentEditor**: Rich text editing functionality
+- **LineSpacingManager**: Paragraph-level spacing control
+- **StorageManager**: Document persistence and auto-save
+- **ExportManager**: Multi-format export functionality
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed module descriptions.
+
 ## Technical Details
 
 ### Page Specifications
@@ -99,13 +160,12 @@ A powerful, browser-based document processing tool that provides full control ov
 - **Margins**: 1 inch on all sides
 - **Content Area**: 6.5" × 9"
 - **Font**: System fonts with 12pt default size
-- **Line Height**: 1.6 for readability
+- **Line Spacing**: Variable (1, 1.15, 1.5, 2, 2.5, 3)
 
 ### Browser Compatibility
-- Chrome (recommended)
-- Firefox
-- Safari
-- Edge
+- Chrome/Edge 90+ (recommended)
+- Firefox 88+
+- Safari 14+
 
 ### File Format
 Documents are saved in JSON format with the following structure:
@@ -119,9 +179,10 @@ Documents are saved in JSON format with the following structure:
   ],
   "pageCount": 1,
   "timestamp": "2024-01-20T10:30:00Z",
-  "version": "2.0",
+  "version": "3.0",
   "format": "US Letter",
-  "margins": "1 inch"
+  "margins": "1 inch",
+  "defaultLineSpacing": 2
 }
 ```
 
@@ -133,14 +194,54 @@ Documents are saved in JSON format with the following structure:
 - 🖨️ **Print-Ready Output**: Perfect for physical printing
 - 💼 **Professional Documents**: Maintain standard formatting
 
+## 🤖 LLM Optimization
+
+This codebase is optimized for AI-assisted development:
+
+- Files under 500 lines for optimal context windows
+- Clear module boundaries and responsibilities
+- Comprehensive JSDoc documentation
+- Automated context generation (`npm run llm:generate`)
+- Claude Code integration for AI-powered development
+
+## 📝 Scripts
+
+```bash
+npm run llm:generate    # Generate LLM context
+npm run llm:validate    # Validate code structure
+npm run lint           # Run ESLint
+npm run format         # Format with Prettier
+npm test              # Run tests
+npm run build         # Build for production
+```
+
 ## Development
 
-This is a standalone HTML application with no external dependencies. All functionality is contained within a single HTML file using:
-- Vanilla JavaScript
-- CSS3 for styling
+The modular architecture uses:
+- Vanilla JavaScript with ES6 modules
+- CSS3 split into logical files
 - HTML5 ContentEditable API
 - Local Storage API
 - File API for save/load
+
+### For Developers
+
+The modular architecture makes it easy to extend:
+
+```javascript
+// Example: Adding a new feature
+import { DocumentEngine } from './core/DocumentEngine.js';
+
+// Create your module
+class MyFeature {
+  constructor() {
+    // Initialize
+  }
+}
+
+// Add to DocumentEngine
+// See ARCHITECTURE.md for integration details
+```
 
 ## Future Enhancements
 
@@ -159,10 +260,21 @@ This is a standalone HTML application with no external dependencies. All functio
 
 MIT License - Feel free to use and modify for your needs.
 
+## 🔄 Migration
+
+Upgrading from the monolithic version? See [MIGRATION.md](MIGRATION.md) for a complete guide.
+
 ## Contributing
 
-Contributions are welcome! Feel free to submit issues or pull requests.
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Run `npm run llm:generate` before committing
+4. Commit your changes (`git commit -m 'feat: add amazing feature'`)
+5. Push to the branch (`git push origin feature/amazing-feature`)
+6. Open a Pull Request
 
 ---
+
+**Note**: The original monolithic version is preserved as `document-processor.html` for reference.
 
 Created with ❤️ for seamless document processing

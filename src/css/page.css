@@ -1,0 +1,83 @@
+/**
+ * @file page.css
+ * @description Page layout and dimensions for US Letter format
+ */
+
+/* Page setup for US Letter (8.5" x 11") */
+@page {
+    size: letter;
+    margin: 1in;
+}
+
+/* Page container wrapper */
+.page-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.document-container {
+    /* US Letter dimensions - FIXED SIZE */
+    width: 8.5in;
+    height: 11in;
+    min-height: 11in;
+    max-height: 11in;
+    
+    /* Standard 1 inch margins */
+    padding: 1in;
+    box-sizing: border-box;
+    
+    /* Visual styling */
+    background: white;
+    box-shadow: 0 0 20px rgba(0,0,0,0.2);
+    
+    /* Page-like appearance */
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+/* Margin indicators */
+.margin-guides {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.show-margins .margin-guides {
+    opacity: 1;
+}
+
+.margin-guides::before {
+    content: '';
+    position: absolute;
+    top: 1in;
+    left: 1in;
+    right: 1in;
+    bottom: 1in;
+    border: 1px dashed #ccc;
+}
+
+/* Page info display */
+.page-info {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    padding: 5px 10px;
+    font-size: 12px;
+    border-radius: 3px;
+    z-index: 10;
+}
+
+/* Page break visual indicator */
+.document-container + .document-container {
+    margin-top: 20px;
+}

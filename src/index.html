@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Processor - US Letter Format</title>
+    <link rel="stylesheet" href="styles/base.css">
+    <link rel="stylesheet" href="styles/page.css">
+    <link rel="stylesheet" href="styles/editor.css">
+    <link rel="stylesheet" href="styles/print.css">
+</head>
+<body>
+    <div class="toolbar-container">
+        <div class="toolbar">
+            <button onclick="saveDocument()">💾 Save</button>
+            <button onclick="loadDocument()">📁 Load</button>
+            <button onclick="exportAsHTML()">📤 Export HTML</button>
+            <button onclick="exportAsMarkdown()">📝 Export Markdown</button>
+            <button onclick="insertImage()">🖼️ Insert Image</button>
+            <button onclick="insertTable()">📊 Insert Table</button>
+            <button onclick="insertTOC()">📑 Insert TOC</button>
+            <button onclick="toggleEditMode()">✏️ Toggle Edit</button>
+            <button onclick="toggleMargins()">📏 Toggle Margins</button>
+            <button onclick="addNewPage()">📄 Add Page</button>
+        </div>
+
+        <div class="format-buttons">
+            <button onclick="formatText('bold')"><b>Bold</b></button>
+            <button onclick="formatText('italic')"><i>Italic</i></button>
+            <button onclick="formatText('underline')"><u>Underline</u></button>
+            <button onclick="formatText('h1')">H1</button>
+            <button onclick="formatText('h2')">H2</button>
+            <button onclick="formatText('h3')">H3</button>
+            <button onclick="formatText('ul')">• List</button>
+            <button onclick="formatText('ol')">1. List</button>
+            <button onclick="formatText('quote')">Quote</button>
+            <button onclick="formatText('code')">Code</button>
+            <button onclick="formatText('link')">🔗 Link</button>
+            <span style="border-left: 1px solid #ddd; margin: 0 5px; height: 20px;"></span>
+            <button onclick="alignText('left')" title="Align Left">⬅️ Left</button>
+            <button onclick="alignText('center')" title="Align Center">↔️ Center</button>
+            <button onclick="alignText('right')" title="Align Right">➡️ Right</button>
+            <span style="border-left: 1px solid #ddd; margin: 0 5px; height: 20px;"></span>
+            <select id="lineSpacingSelect" onchange="setLineSpacing(this.value)" title="Line Spacing" style="padding: 5px 10px; border: 1px solid #ddd; background: white; cursor: pointer; border-radius: 3px;">
+                <option value="1">Single</option>
+                <option value="1.15">1.15</option>
+                <option value="1.5">1.5</option>
+                <option value="2" selected>Double</option>
+                <option value="2.5">2.5</option>
+                <option value="3">Triple</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="page-wrapper">
+        <div class="document-container" id="page-1">
+            <div class="margin-guides"></div>
+            <div class="page-info">Page 1 | US Letter (8.5" × 11")</div>
+            <div id="document-content" class="editable-content" contenteditable="true">
+                <h1>Document Processing System</h1>
+                <p>This is a fully editable document that Claude can control. You can:</p>
+                <ul>
+                    <li>Edit text directly</li>
+                    <li>Insert and manage images</li>
+                    <li>Create tables</li>
+                    <li>Apply formatting</li>
+                    <li>Save and load documents</li>
+                    <li>Export to different formats</li>
+                </ul>
+                
+                <h2>How to Use</h2>
+                <p>1. Claude can read this entire document using the Read tool</p>
+                <p>2. Claude can edit by using the Edit tool to modify the HTML file</p>
+                <p>3. Images can be embedded as base64 or linked to local files</p>
+                <p>4. The document maintains full formatting and structure</p>
+                
+                <h2>Example Table</h2>
+                <table>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Status</th>
+                        <th>Notes</th>
+                    </tr>
+                    <tr>
+                        <td>Text Editing</td>
+                        <td>✅ Full Support</td>
+                        <td>Rich text with formatting</td>
+                    </tr>
+                    <tr>
+                        <td>Image Management</td>
+                        <td>✅ Full Support</td>
+                        <td>Insert, resize, delete</td>
+                    </tr>
+                    <tr>
+                        <td>Tables</td>
+                        <td>✅ Full Support</td>
+                        <td>Create and edit tables</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="status">Saved!</div>
+
+    <!-- Load the modular JavaScript -->
+    <script type="module" src="js/index.js"></script>
+</body>
+</html>

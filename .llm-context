@@ -1,73 +1,34 @@
+version: 3.0.0
+generated: '2025-06-03T07:35:47.426Z'
+generator: scripts/llm/generate-context.js
 project:
-  name: "Document Processor"
-  type: "Web Application"
-  description: "Browser-based document editor with US Letter format and pagination"
-  version: "2.0"
-  stack: 
-    - "Vanilla JavaScript"
-    - "HTML5 ContentEditable API"
-    - "CSS3"
-    - "Local Storage API"
-  
+  name: document-processor
+  version: 3.0.0
+  description: Browser-based document editing tool with automatic pagination and rich formatting
+  repository: https://github.com/DrunkOnJava/document-processor.git
+git:
+  branch: main
+  commit: be4bbe5
 architecture:
-  pattern: "Single Page Application (currently monolithic)"
-  planned_pattern: "Modular Component Architecture"
-  entry_point: "document-processor.html"
-  
+  pattern: modular
+  entry: src/js/index.js
+  modules:
+    - DocumentEngine - Core orchestrator
+    - PageManager - Pagination and overflow handling
+    - ContentEditor - Rich text editing
+    - TableOfContents - TOC generation
+    - ExportManager - Multiple format exports
+    - StorageManager - Local storage and auto-save
 key_features:
-  - name: "Rich Text Editing"
-    status: "implemented"
-    description: "Full text formatting with contentEditable"
-  - name: "Automatic Pagination"
-    status: "implemented"
-    description: "Content flows to new pages automatically"
-  - name: "Table of Contents"
-    status: "implemented"
-    description: "Auto-generated from headings with page numbers"
-  - name: "Export System"
-    status: "implemented"
-    formats: ["JSON", "HTML", "Markdown"]
-  - name: "Auto-save"
-    status: "implemented"
-    interval: "30 seconds"
-    
-conventions:
-  naming:
-    variables: "camelCase"
-    functions: "camelCase"
-    css_classes: "kebab-case"
-    constants: "UPPER_SNAKE_CASE"
-  formatting:
-    indent: "2 spaces"
-    line_length: "100 chars"
-    quotes: "single quotes for JS"
-    
-current_limitations:
-  - "All code in single HTML file (47KB)"
-  - "No unit tests"
-  - "No build process"
-  - "Limited error handling"
-  - "No TypeScript"
-  
-refactoring_priorities:
-  1: "Split into modules (HTML, CSS, JS)"
-  2: "Add comprehensive JSDoc comments"
-  3: "Implement error boundaries"
-  4: "Add TypeScript definitions"
-  5: "Create unit test suite"
-  
-common_tasks:
-  - task: "Add new formatting option"
-    location: "Look for formatSelection() function"
-  - task: "Modify page dimensions"
-    location: "Search for PAGE_WIDTH constant"
-  - task: "Change auto-save interval"
-    location: "Find startAutoSave() function"
-  - task: "Add new export format"
-    location: "Locate exportDocument() function"
-    
-debug_hints:
-  - "Page overflow issues: Check updatePageContent() function"
-  - "Formatting not applying: Review formatSelection() and event listeners"
-  - "Save/load problems: Examine saveDocument() and loadDocument()"
-  - "TOC not updating: Look at updateTableOfContents() function"
+  - US Letter format (8.5" × 11") with 1-inch margins
+  - Automatic pagination with content overflow
+  - Rich text editing with contentEditable
+  - Multiple line spacing options
+  - Table of Contents generation
+  - Export to JSON/HTML/Markdown
+  - Auto-save to localStorage
+critical_constraints:
+  - Must maintain exact page dimensions
+  - Pagination logic is core functionality
+  - Backward compatibility with saved documents
+  - Keep-with-next for headings and tables

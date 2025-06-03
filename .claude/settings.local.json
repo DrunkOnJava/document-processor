@@ -3,7 +3,19 @@
     "allow": [
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "mcp__sequential-thinking__sequentialthinking"
+      "mcp__sequential-thinking__sequentialthinking",
+      "Bash(lsof:*)",
+      "Bash(fd:*)",
+      "mcp__sqlite__list_tables",
+      "mcp__sqlite__describe_table",
+      "mcp__sqlite__read_query",
+      "Bash(mkdir:*)",
+      "Bash(ls:*)",
+      "Bash(npm test:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run build:dev:*)",
+      "Bash(npm run lint:*)",
+      "mcp__filesystem__search_files"
     ],
     "deny": []
   }

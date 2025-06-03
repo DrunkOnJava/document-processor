@@ -1,0 +1,204 @@
+/**
+ * @file editor.css
+ * @description Editor-specific styles including toolbar and content
+ */
+
+/* Toolbar container to keep both toolbars together */
+.toolbar-container {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: #e0e0e0;
+    padding-bottom: 0;
+    max-width: 8.5in;
+    margin: 0 auto 20px;
+}
+
+.toolbar {
+    background: #333;
+    color: white;
+    padding: 10px 20px;
+    width: 100%;
+    display: flex;
+    gap: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    border-radius: 4px 4px 0 0;
+    margin-bottom: 0;
+}
+
+.toolbar button {
+    background: #555;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.toolbar button:hover {
+    background: #666;
+}
+
+/* Format buttons */
+.format-buttons {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    background: white;
+    padding: 10px;
+    border-radius: 0 0 4px 4px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    margin: 0;
+}
+
+.format-buttons button {
+    padding: 5px 10px;
+    border: 1px solid #ddd;
+    background: white;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: background 0.2s;
+}
+
+.format-buttons button:hover {
+    background: #f0f0f0;
+}
+
+.format-buttons span {
+    display: inline-flex;
+    align-items: center;
+}
+
+/* Editable content area */
+.editable-content {
+    /* Content area = 6.5" x 9" (after 1" margins) */
+    width: 100%;
+    height: 9in;
+    min-height: 9in;
+    max-height: 9in;
+    outline: none;
+    overflow: hidden;
+    font-size: 12pt;
+    position: relative;
+    box-sizing: border-box;
+}
+
+.editable-content img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 20px 0;
+}
+
+/* Line spacing classes for paragraph-level control */
+.spacing-1 { line-height: 1 !important; }
+.spacing-1-15 { line-height: 1.15 !important; }
+.spacing-1-5 { line-height: 1.5 !important; }
+.spacing-2 { line-height: 2 !important; }
+.spacing-2-5 { line-height: 2.5 !important; }
+.spacing-3 { line-height: 3 !important; }
+
+/* Default line height for block elements - inherit from parent or class */
+.editable-content p,
+.editable-content div,
+.editable-content h1,
+.editable-content h2,
+.editable-content h3,
+.editable-content h4,
+.editable-content h5,
+.editable-content h6,
+.editable-content li,
+.editable-content blockquote,
+.editable-content pre {
+    line-height: inherit;
+}
+
+/* Text alignment classes */
+.editable-content [style*="text-align: left"] {
+    text-align: left !important;
+}
+
+.editable-content [style*="text-align: center"] {
+    text-align: center !important;
+}
+
+.editable-content [style*="text-align: right"] {
+    text-align: right !important;
+}
+
+/* Table of Contents styles */
+.table-of-contents {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 20px;
+    margin: 20px 0;
+    page-break-inside: avoid;
+}
+
+.table-of-contents h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 18pt;
+    text-align: center;
+    color: #333;
+}
+
+.toc-entry {
+    display: flex;
+    align-items: baseline;
+    margin-bottom: 8px;
+    position: relative;
+}
+
+.toc-entry.toc-level-1 {
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+.toc-entry.toc-level-2 {
+    margin-left: 20px;
+}
+
+.toc-entry.toc-level-3 {
+    margin-left: 40px;
+    font-size: 0.9em;
+}
+
+.toc-title {
+    flex: 0 0 auto;
+    max-width: 80%;
+    padding-right: 10px;
+}
+
+.toc-dots {
+    flex: 1 1 auto;
+    border-bottom: 1px dotted #999;
+    margin: 0 5px;
+    min-width: 20px;
+    height: 0.8em;
+}
+
+.toc-page {
+    flex: 0 0 auto;
+    padding-left: 10px;
+    font-weight: normal;
+}
+
+.toc-link {
+    color: #0066cc;
+    text-decoration: none;
+}
+
+.toc-link:hover {
+    text-decoration: underline;
+}
+
+.toc-update-notice {
+    font-size: 0.8em;
+    color: #666;
+    text-align: center;
+    margin-top: 10px;
+    font-style: italic;
+}
