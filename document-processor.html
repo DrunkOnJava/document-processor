@@ -1194,6 +1194,61 @@ ${content}
             }
         }, 30000);
         
+        // Check if element should stay with next element (keep-with-next)
+        function shouldKeepWithNext(element) {
+            if (!element) return false;
+            
+            const tagName = element.tagName;
+            const nextElement = element.nextElementSibling;
+            
+            if (!nextElement) return false;
+            
+            // Headings (H1-H6) should stay with following tables
+            if (['H1', 'H2', 'H3', 'H4', 'H5', 'H6'].includes(tagName)) {
+                if (nextElement.tagName === 'TABLE') {
+                    return true;
+                }
+                // Also check for lists after headings
+                if (['UL', 'OL'].includes(nextElement.tagName)) {
+                    return true;
+                }
+                // Check if next element is a paragraph that might contain important content
+                if (nextElement.tagName === 'P' && nextElement.textContent.length < 100) {
+                    // Short paragraph after heading might be a caption
+                    const afterParagraph = nextElement.nextElementSibling;
+                    if (afterParagraph && afterParagraph.tagName === 'TABLE') {
+                        return true;
+                    }
+                }
+            }
+            
+            // Paragraphs ending with ":" often introduce tables/lists
+            if (tagName === 'P' && element.textContent.trim().endsWith(':')) {
+                if (['TABLE', 'UL', 'OL'].includes(nextElement.tagName)) {
+                    return true;
+                }
+            }
+            
+            return false;
+        }
+        
+        // Get all elements that should move together as a group
+        function getKeepTogetherGroup(startElement) {
+            const group = [startElement];
+            let current = startElement;
+            
+            while (shouldKeepWithNext(current)) {
+                current = current.nextElementSibling;
+                if (current) {
+                    group.push(current);
+                } else {
+                    break;
+                }
+            }
+            
+            return group;
+        }
+        
         // Check for overflow and create new pages
         function checkPageOverflow() {
             const containers = document.querySelectorAll('.document-container');
@@ -1239,6 +1294,33 @@ ${content}
                     document.body.removeChild(tempDiv);
                     
                     if (splitIndex >= 0) {
+                        // Check if we're splitting a keep-together group
+                        let adjustedSplitIndex = splitIndex;
+                        
+                        // Look backward from split point to find keep-together groups
+                        for (let i = splitIndex - 1; i >= 0; i--) {
+                            const node = allNodes[i];
+                            if (node.nodeType === 1) { // Element node
+                                const group = getKeepTogetherGroup(node);
+                                // If this element is part of a group that extends past the split
+                                if (group.length > 1) {
+                                    let groupEndIndex = i;
+                                    for (let j = 0; j < group.length; j++) {
+                                        const groupNode = group[j];
+                                        const nodeIndex = allNodes.indexOf(groupNode);
+                                        if (nodeIndex > groupEndIndex) {
+                                            groupEndIndex = nodeIndex;
+                                        }
+                                    }
+                                    // If group extends past or to the split point, move entire group
+                                    if (groupEndIndex >= splitIndex) {
+                                        adjustedSplitIndex = i;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        
                         // Get or create next page
                         let nextContainer = container.nextElementSibling;
                         if (!nextContainer || !nextContainer.classList.contains('document-container')) {
@@ -1248,7 +1330,7 @@ ${content}
                         const nextContent = nextContainer.querySelector('.editable-content');
                         
                         // Move overflowing content to next page
-                        const nodesToMove = allNodes.slice(splitIndex);
+                        const nodesToMove = allNodes.slice(adjustedSplitIndex);
                         const fragment = document.createDocumentFragment();
                         
                         nodesToMove.forEach(node => {
