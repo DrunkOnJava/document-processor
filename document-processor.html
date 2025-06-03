@@ -162,6 +162,26 @@
             display: block;
             margin: 20px 0;
         }
+        
+        /* Text alignment classes */
+        .editable-content [style*="text-align: left"] {
+            text-align: left !important;
+        }
+        
+        .editable-content [style*="text-align: center"] {
+            text-align: center !important;
+        }
+        
+        .editable-content [style*="text-align: right"] {
+            text-align: right !important;
+        }
+        
+        /* Ensure alignment is preserved in print */
+        @media print {
+            [style*="text-align"] {
+                text-align: inherit !important;
+            }
+        }
         .image-container {
             position: relative;
             display: inline-block;
@@ -221,6 +241,11 @@
         .format-buttons button:hover {
             background: #f0f0f0;
         }
+        
+        .format-buttons span {
+            display: inline-flex;
+            align-items: center;
+        }
         #status {
             position: fixed;
             bottom: 20px;
@@ -259,6 +284,10 @@
         <button onclick="formatText('quote')">Quote</button>
         <button onclick="formatText('code')">Code</button>
         <button onclick="formatText('link')">🔗 Link</button>
+        <span style="border-left: 1px solid #ddd; margin: 0 5px; height: 20px;"></span>
+        <button onclick="alignText('left')" title="Align Left">⬅️ Left</button>
+        <button onclick="alignText('center')" title="Align Center">↔️ Center</button>
+        <button onclick="alignText('right')" title="Align Right">➡️ Right</button>
     </div>
 
     <div class="document-container" id="page-1">
@@ -358,6 +387,43 @@
                     const url = prompt('Enter URL:');
                     if (url) document.execCommand('createLink', false, url);
                     break;
+            }
+        }
+        
+        function alignText(alignment) {
+            // Use execCommand for alignment
+            switch(alignment) {
+                case 'left':
+                    document.execCommand('justifyLeft', false, null);
+                    break;
+                case 'center':
+                    document.execCommand('justifyCenter', false, null);
+                    break;
+                case 'right':
+                    document.execCommand('justifyRight', false, null);
+                    break;
+            }
+            
+            // Alternative method that works more reliably
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                let container = range.commonAncestorContainer;
+                
+                // Find the block-level parent element
+                if (container.nodeType === 3) { // Text node
+                    container = container.parentNode;
+                }
+                
+                // Find the nearest block element
+                while (container && container !== document.body) {
+                    const tagName = container.tagName?.toLowerCase();
+                    if (['p', 'h1', 'h2', 'h3', 'div', 'li', 'blockquote', 'pre'].includes(tagName)) {
+                        container.style.textAlign = alignment;
+                        break;
+                    }
+                    container = container.parentNode;
+                }
             }
         }
 
